@@ -5,14 +5,12 @@ const cors = require("cors");
 require("dotenv").config();
 const bodyParser = require("body-parser");
 app.use(bodyParser.json());
-app.use(cors());
 const PORT = process.env.PORT || 3000;
 
 const db = require("./db");
 
 const candidateRoute = require("./Routes/CandidateRoute");
 const userRoute = require("./Routes/UserRoute");
-const cors = require("cors");
 app.use("/candidate", candidateRoute);
 app.use("/user", userRoute);
 app.get("/", (req, res) => {
