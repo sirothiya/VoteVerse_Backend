@@ -49,10 +49,10 @@ router.post("/login", async (req, res) => {
     console.log("1111");
     const token = generateToken(payload);
     console.log("11111");
-    res.status(200).json({ user, token });
+   return res.status(200).json({ user, token });
   } catch (err) {
     console.error("Error logging in user:", err);
-    res.status(500).json({ error: "Internal server error" });
+   return res.status(500).json({ error: "Internal server error" });
   }
 });
 
