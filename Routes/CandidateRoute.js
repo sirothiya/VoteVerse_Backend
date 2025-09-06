@@ -37,7 +37,13 @@ router.get("/", jwtMiddleware, async (req, res) => {
     if (!(await checkAdmin(req.user.id)))
       return res.status(403).json({ message: "user is not an admin" });
     const candidates = await candidate.find();
-    res.status(200).json(candidates);
+    const data = candidates.map((c) => ({
+      name: c.name,
+      party: c.party,
+      age: c.age,
+      id: c._id,
+    }));
+    return res.status(200).json(data);
   } catch (err) {
     console.log("Error fetching candidates:", err);
     res.status(500).json({ error: "Internal server error" });
