@@ -34,8 +34,6 @@ router.post("/addcandidate", jwtMiddleware, async (req, res) => {
 router.get("/", jwtMiddleware, async (req, res) => {
   try {
     console.log("User ID from token:", req.user.id);
-    if (!(await checkAdmin(req.user.id)))
-      return res.status(403).json({ message: "user is not an admin" });
     const candidates = await candidate.find();
     const data = candidates.map((c) => ({
       name: c.name,
@@ -99,7 +97,7 @@ router.put("/:id", jwtMiddleware, async (req, res) => {
     if (!updatedCandidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
-    res.status(200).json({
+    return res.status(200).json({
       message: "Candidate updated successfully",
       candidate: updatedCandidate,
     });
@@ -118,7 +116,7 @@ router.delete("/:id", jwtMiddleware, async (req, res) => {
     if (!deletedCandidate) {
       return res.status(400).json({ message: "No candidate found" });
     }
-    res.status(200).json({ message: "Candidate deleted successfully" });
+    return res.status(200).json({ message: "Candidate deleted successfully" });
   } catch (err) {
     console.error("Error deleting candidate:", err);
     res.status(500).json({ error: "Internal server error" });
@@ -149,7 +147,7 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 
 router.get("/vote/count", async (req, res) => {
   try {
-    const candidates = await candidate.find().sort({ voteCount: 'desc' });
+    const candidates = await candidate.find().sort({ voteCount: "desc" });
     const partyVoteMap = {};
 
     candidates.forEach((el) => {
@@ -161,7 +159,7 @@ router.get("/vote/count", async (req, res) => {
     });
     const voteRecord = Object.entries(partyVoteMap).map(([party, votes]) => ({
       party,
-      votes
+      votes,
     }));
 
     return res.status(200).json({ voteRecord });
