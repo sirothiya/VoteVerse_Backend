@@ -121,4 +121,16 @@ router.put("/profile/password", jwtMiddleware, async (req, res) => {
   }
 });
 
+router.delete("/delete/all",jwtMiddleware,async (req,res)=>{
+    try{
+      if(!(await checkAdmin(req.user.id)))
+      return res.status(403).json({ message: "user is not an admin" });
+      await User.deleteMany({});
+      return res.status(200).json({ message: "All users deleted successfully" });
+    }catch(err){
+    console.error("Error deleting all users:", err);
+    res.status(500).json({ error: "Internal server error" });
+    }
+})
+
 module.exports = router;
