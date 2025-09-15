@@ -44,6 +44,9 @@ router.post("/login", async (req, res) => {
     console.log("1");
     const user = await User.findOne({ aadhar });
     console.log("11");
+    if(!user){
+      return res.status(401).json({error:"User not found, please signup"});
+    }
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: "Invalid aadhar or password" });
     }
