@@ -28,6 +28,11 @@ const candidateSchema=new mongoose.Schema({
     voteCount:{
         type:Number,
         default:0
+    },
+    partySymbol:{
+        type:String,
+        default:"",
+        required:true
     }
 
 })

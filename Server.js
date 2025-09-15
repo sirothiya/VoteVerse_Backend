@@ -22,6 +22,7 @@ const candidateRoute = require("./Routes/CandidateRoute");
 const userRoute = require("./Routes/UserRoute");
 app.use("/candidate", candidateRoute);
 app.use("/user", userRoute);
+app.use("/uploads", express.static("uploads"));
 app.get("/", (req, res) => {
   res.status(200).send("Welcome to the Voting App");
 });

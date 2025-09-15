@@ -1,5 +1,5 @@
 const express = require("express");
-
+const multer = require("multer");
 const router = express.Router();
 
 const candidate = require("../Models/Candidate");
@@ -16,13 +16,26 @@ const checkAdmin = async (userId) => {
     return false;
   }
 };
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // folder to store images
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
 
-router.post("/addcandidate", jwtMiddleware, async (req, res) => {
+router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async (req, res) => {
   try {
     if (!(await checkAdmin(req.user.id)))
       return res.status(403).json({ message: "user is not an admin" });
     const data = req.body;
-    const newCandidate = new candidate(data);
+    const partySymbol= req.file ? req.file.path : "";
+    if(!partySymbol){
+      return res.status(400).json({message:"Party symbol is required"});
+    }
+    const newCandidate = new candidate({...data, partySymbol});
     const savedCandidate = await newCandidate.save();
     res.status(200).json(savedCandidate);
   } catch (err) {

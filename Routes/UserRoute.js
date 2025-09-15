@@ -5,6 +5,8 @@ const User = require("../Models/User");
 const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
+
+
 router.post("/signup", async (req, res) => {
   try {
     const data = req.body;
