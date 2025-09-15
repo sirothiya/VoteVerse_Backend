@@ -12,12 +12,18 @@ router.post("/signup", async (req, res) => {
     const isAdmin = await User.findOne({ role: "Admin" });
     if (data.role == "Admin" && isAdmin)
       return res.status(403).json({ error: "Admin already exists" });
-    
+
     // validate aadhar card number must be 12digit
-    if(!/^\d{12}$/.test(data.aadhar))return res.status(400).json({error:"Invalid Aadhar number1:must be 12 digit number"})
-    
-    const existingUser=await User.findOne({aadhar:data.aadhar})
-    if(existingUser)return res.status(400).json({error:"Aadhar number already registered"})
+    if (!/^\d{12}$/.test(data.aadhar))
+      return res
+        .status(400)
+        .json({ error: "Invalid Aadhar number1:must be 12 digit number" });
+
+    const existingUser = await User.findOne({ aadhar: data.aadhar });
+    if (existingUser)
+      return res
+        .status(400)
+        .json({ error: "Aadhar number already registered" });
     const user = new User(data);
     const newUser = await user.save();
     console.log("User created successfully");
@@ -49,20 +55,23 @@ router.post("/login", async (req, res) => {
     console.log("1111");
     const token = generateToken(payload);
     console.log("11111");
-   return res.status(200).json({ user:{
-    id:user.id,
-    name:user.name,
-    age:user.age,
-    email:user.email, 
-    mobile:user.mobile,
-    address:user.address,
-    aadhar:user.aadhar,
-    role:user.role,
-    isVoted:user.isVoted
-   }, token });
+    return res.status(200).json({
+      user: {
+        id: user.id,
+        name: user.name,
+        age: user.age,
+        email: user.email,
+        mobile: user.mobile,
+        address: user.address,
+        aadhar: user.aadhar,
+        role: user.role,
+        isVoted: user.isVoted,
+      },
+      token,
+    });
   } catch (err) {
     console.error("Error logging in user:", err);
-   return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
@@ -102,8 +111,6 @@ router.put("/:aadhar", jwtMiddleware, async (req, res) => {
   }
 });
 
-
-
 router.put("/profile/password", jwtMiddleware, async (req, res) => {
   try {
     const userId = req.user.id; //extracting the id from the token
@@ -121,16 +128,16 @@ router.put("/profile/password", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/delete/all",jwtMiddleware,async (req,res)=>{
-    try{
-      if(!(await checkAdmin(req.user.id)))
-      return res.status(403).json({ message: "user is not an admin" });
-      await User.deleteMany({});
-      return res.status(200).json({ message: "All users deleted successfully" });
-    }catch(err){
-    console.error("Error deleting all users:", err);
+router.delete("/deleteOne", jwtMiddleware, async (req, res) => {
+  try {
+    const id = req.user.id;
+    const user = await User.findByIdAndDelete(id);
+    if (!user) return res.status(404).json({ error: "User not found" });
+    return res.status(200).json({ message: "User deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting user:", err);
     res.status(500).json({ error: "Internal server error" });
-    }
-})
+  }
+});
 
 module.exports = router;
