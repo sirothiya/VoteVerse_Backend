@@ -20,8 +20,10 @@ const db = require("./db");
 
 const candidateRoute = require("./Routes/CandidateRoute");
 const userRoute = require("./Routes/UserRoute");
+const geminiRoute = require("./Routes/Gemini");
 app.use("/candidate", candidateRoute);
 app.use("/user", userRoute);
+app.use("/gemini", geminiRoute);
 app.use("/uploads", express.static("uploads"));
 app.get("/", (req, res) => {
   res.status(200).send("Welcome to the Voting App");
