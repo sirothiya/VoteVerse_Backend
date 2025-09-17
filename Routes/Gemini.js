@@ -11,7 +11,12 @@ router.post("/generate-image", async (req, res) => {
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-image-preview",
-      contents: prompt,
+      contents:[
+        {
+          role: "user",
+          parts: [{ text: prompt }]
+        }
+      ],
     });
     for (const part  of response.candidates[0].content.parts) {
       if (part.text) {
