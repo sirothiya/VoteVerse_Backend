@@ -3,7 +3,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai"); // note: this i
 const router = express.Router();
 
 // Make sure API key is set in .env
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/generate-image", async (req, res) => {
   try {
