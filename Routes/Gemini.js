@@ -63,7 +63,7 @@ router.post("/generate-image", async (req, res) => {
     // res.set("Content-Type", mimeType);
     // res.send(buffer);
 
-    const { prompt } = req.body.prompt;
+    const { prompt } = req.body;
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash-image-preview', // Use the image generation model
       // You may need to configure responseModalities for image output
