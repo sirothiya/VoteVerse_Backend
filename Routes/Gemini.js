@@ -2,7 +2,7 @@ const express = require("express");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 async function generateImageWithRetry(model, prompt, maxRetries = 3) {
   let attempt = 0;
