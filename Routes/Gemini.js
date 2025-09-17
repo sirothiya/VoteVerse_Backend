@@ -1,28 +1,23 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // note: this is @google/generative-ai
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
 
-// Make sure API key is set in .env
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 router.post("/generate-image", async (req, res) => {
   try {
-    const prompt = req.body.prompt; // not destructuring with { prompt } = req.body.prompt
+    const prompt = req.body.prompt;
 
-    // Call Gemini’s image preview model
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-image-preview" });
+    // get model
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.5-flash-image-preview"
+    });
 
-    const result = await model.generateContent([
-      {
-        role: "user",
-        parts: [{ text: prompt }]
-      }
-    ]);
+    // NO role, NO parts, just pass the prompt string
+    const result = await model.generateContent(prompt);
 
-    // The response holds image(s) in inlineData
+    // extract inlineData (the image)
     const parts = result.response.candidates[0].content.parts;
-
-    // Find first image
     const imagePart = parts.find((p) => p.inlineData);
 
     if (!imagePart) {
