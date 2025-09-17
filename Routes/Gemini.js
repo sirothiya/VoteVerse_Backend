@@ -36,31 +36,51 @@ async function generateImageWithRetry(model, prompt, maxRetries = 3) {
   }
 }
 
+
 router.post("/generate-image", async (req, res) => {
   try {
-    const prompt = req.body.prompt;
+    // const prompt = req.body.prompt;
 
+    // const model = genAI.getGenerativeModel({
+    //   model: "gemini-2.5-flash-image-preview",
+    // });
+
+    // // Call with retry
+    // const result = await generateImageWithRetry(model, prompt, 3);
+
+    // // Extract image from the result
+    // const parts = result.response.candidates[0].content.parts;
+    // const imagePart = parts.find((p) => p.inlineData);
+
+    // if (!imagePart) {
+    //   return res.status(400).json({ error: "No image returned from Gemini" });
+    // }
+
+    // const imageData = imagePart.inlineData.data; // base64
+    // const mimeType = imagePart.inlineData.mimeType || "image/png";
+
+    // const buffer = Buffer.from(imageData, "base64");
+    // res.set("Content-Type", mimeType);
+    // res.send(buffer);
+
+    const { prompt } = req.body.prompt;
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash-image-preview",
+      model: 'gemini-2.5-flash-image-preview', // Use the image generation model
+      // You may need to configure responseModalities for image output
+      generationConfig: {
+         responseModalities: ["TEXT", "IMAGE"]
+      }
     });
 
-    // Call with retry
-    const result = await generateImageWithRetry(model, prompt, 3);
+    const result = await model.generateContent(prompt);
+    const imagePart = result.response.candidates[0].content.parts.find(part => part.inlineData);
 
-    // Extract image from the result
-    const parts = result.response.candidates[0].content.parts;
-    const imagePart = parts.find((p) => p.inlineData);
-
-    if (!imagePart) {
-      return res.status(400).json({ error: "No image returned from Gemini" });
+    if (imagePart) {
+      const imageData = imagePart.inlineData.data;
+      res.send({ image: imageData });
+    } else {
+      res.status(500).send({ error: 'Failed to generate image.' });
     }
-
-    const imageData = imagePart.inlineData.data; // base64
-    const mimeType = imagePart.inlineData.mimeType || "image/png";
-
-    const buffer = Buffer.from(imageData, "base64");
-    res.set("Content-Type", mimeType);
-    res.send(buffer);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
