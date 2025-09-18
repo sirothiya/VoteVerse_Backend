@@ -6,6 +6,16 @@ const candidateSchema=new mongoose.Schema({
         type:String,
         required:true
     },
+    aadhar:{
+        type:String,
+        required:true,
+        unique:true,
+        length:12
+    },
+    password:{
+        type:String,
+        required:true
+    },
     party:{
         type:String,
         required:true
