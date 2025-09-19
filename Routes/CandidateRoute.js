@@ -35,7 +35,7 @@ router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async 
     // if(!partySymbol){
     //   return res.status(400).json({message:"Party symbol is required"});
     // }
-    const newCandidate = new candidate({...data, partySymbol});
+    const newCandidate = new candidate({...data});
     const savedCandidate = await newCandidate.save();
     res.status(200).json(savedCandidate);
   } catch (err) {
