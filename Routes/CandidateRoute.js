@@ -53,6 +53,9 @@ router.get("/", jwtMiddleware, async (req, res) => {
       party: c.party,
       age: c.age,
       id: c._id,
+      partySymbol: c.partySymbol,
+      aadhar: c.aadhar,
+      password: c.password
     }));
     return res.status(200).json(data);
   } catch (err) {
