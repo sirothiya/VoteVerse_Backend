@@ -31,10 +31,10 @@ router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async 
     if (!(await checkAdmin(req.user.id)))
       return res.status(403).json({ message: "user is not an admin" });
     const data = req.body;
-    const partySymbol= req.file ? req.file.path : "";
-    if(!partySymbol){
-      return res.status(400).json({message:"Party symbol is required"});
-    }
+    // const partySymbol= req.file ? req.file.path : "";
+    // if(!partySymbol){
+    //   return res.status(400).json({message:"Party symbol is required"});
+    // }
     const newCandidate = new candidate({...data, partySymbol});
     const savedCandidate = await newCandidate.save();
     res.status(200).json(savedCandidate);
