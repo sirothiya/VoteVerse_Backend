@@ -1,89 +1,55 @@
+// backend/routes/gemini.js
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const router = express.Router();
+const fetch = require("node-fetch"); // or axios if you prefer
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const GEMINI_URL = "https://gemini.googleapis.com/v1/images:generate";
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-async function generateImageWithRetry(model, prompt, maxRetries = 3) {
-  let attempt = 0;
-  let delay = 1000; // start with 1 second
-
-  while (attempt < maxRetries) {
-    try {
-      // Attempt generation
-      const result = await model.generateContent(prompt);
-      return result; // success
-    } catch (err) {
-      // Check if it's a 429 error
-      if (
-        err.message.includes("429") ||
-        (err.status && err.status === 429)
-      ) {
-        attempt++;
-        if (attempt >= maxRetries) {
-          throw new Error(
-            `Exceeded retry attempts due to rate limiting: ${err.message}`
-          );
-        }
-        console.warn(`429 Too Many Requests. Retry #${attempt} in ${delay}ms`);
-        await new Promise((resolve) => setTimeout(resolve, delay));
-        delay *= 2; // exponential backoff
-      } else {
-        // Not a rate limit error → throw immediately
-        throw err;
-      }
-    }
-  }
-}
-
+const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
 
 router.post("/generate-image", async (req, res) => {
-  try {
-    // const prompt = req.body.prompt;
+  const { prompt } = req.body;
+  let retries = 3;
 
-    // const model = genAI.getGenerativeModel({
-    //   model: "gemini-2.5-flash-image-preview",
-    // });
+  while (retries > 0) {
+    try {
+      const response = await fetch(GEMINI_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${GEMINI_API_KEY}`,
+        },
+        body: JSON.stringify({ prompt }),
+      });
 
-    // // Call with retry
-    // const result = await generateImageWithRetry(model, prompt, 3);
+      const data = await response.json();
 
-    // // Extract image from the result
-    // const parts = result.response.candidates[0].content.parts;
-    // const imagePart = parts.find((p) => p.inlineData);
-
-    // if (!imagePart) {
-    //   return res.status(400).json({ error: "No image returned from Gemini" });
-    // }
-
-    // const imageData = imagePart.inlineData.data; // base64
-    // const mimeType = imagePart.inlineData.mimeType || "image/png";
-
-    // const buffer = Buffer.from(imageData, "base64");
-    // res.set("Content-Type", mimeType);
-    // res.send(buffer);
-
-    const { prompt } = req.body;
-    const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash-image-preview', // Use the image generation model
-      // You may need to configure responseModalities for image output
-      generationConfig: {
-         responseModalities: ["TEXT", "IMAGE"]
+      if (response.ok) {
+        // Convert image data to buffer or send as is
+        const imageBase64 = data?.images?.[0]?.b64_json;
+        if (!imageBase64) {
+          throw new Error("No image returned");
+        }
+        const imgBuffer = Buffer.from(imageBase64, "base64");
+        res.setHeader("Content-Type", "image/png");
+        return res.send(imgBuffer);
+      } else if (data.error?.includes("RetryInfo")) {
+        const retryMatch = data.error.match(/"retryDelay":"(\d+)s"/);
+        const delay = retryMatch ? parseInt(retryMatch[1], 10) * 1000 : 5000;
+        console.warn(`Gemini retry requested, waiting ${delay / 1000}s`);
+        await sleep(delay);
+        retries--;
+      } else {
+        console.error("Gemini error:", data);
+        return res.status(500).json({ error: data });
       }
-    });
-
-    const result = await model.generateContent(prompt);
-    const imagePart = result.response.candidates[0].content.parts.find(part => part.inlineData);
-
-    if (imagePart) {
-      const imageData = imagePart.inlineData.data;
-      res.send({ image: imageData });
-    } else {
-      res.status(500).send({ error: 'Failed to generate image.' });
+    } catch (err) {
+      console.error("Gemini request failed:", err);
+      retries--;
+      if (retries <= 0) return res.status(500).json({ error: err.message });
+      await sleep(5000);
     }
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   }
 });
 
