@@ -18,7 +18,8 @@ const candidateSchema=new mongoose.Schema({
     },
     party:{
         type:String,
-        required:true
+        required:true,
+        unique:true,
     },
     age:{
         type:Number,
@@ -42,6 +43,7 @@ const candidateSchema=new mongoose.Schema({
     partySymbol:{
         type:String,
         default:"",
+        unique:true,
     }
 
 })
