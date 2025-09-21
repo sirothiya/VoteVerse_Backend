@@ -1,6 +1,8 @@
 const express = require("express");
 const multer = require("multer");
 const router = express.Router();
+const path = require("path");
+
 
 const candidate = require("../Models/Candidate");
 const User = require("../Models/User");
@@ -38,10 +40,7 @@ router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async 
       password: req.body.password,
       party: req.body.party,
       age: req.body.age,
-      partySymbol: {
-        data: req.file.buffer,
-        contentType: req.file.mimetype
-      }
+      partySymbol:  req.file.path
     });
     const savedCandidate = await newCandidate.save();
     res.status(200).json(savedCandidate);
@@ -60,7 +59,7 @@ router.get("/", jwtMiddleware, async (req, res) => {
       party: c.party,
       age: c.age,
       id: c._id,
-      partySymbol: c.partySymbol.data.toString('base64'), // Convert Buffer to base64 string
+      partySymbol: `http://localhost:5173/${c.partySymbol.replace(/\\/g, '/')}`, // Convert Buffer to base64 string
       aadhar: c.aadhar
     }));
     return res.status(200).json(data);

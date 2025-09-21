@@ -41,10 +41,9 @@ const candidateSchema=new mongoose.Schema({
         default:0
     },
     partySymbol:{
-       data:Buffer,
-       contentType:String,
-       required:true,
-        unique:true,
+       type: String,
+    required: true,
+    unique: true
     }
 
 })
