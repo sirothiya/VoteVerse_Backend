@@ -4,6 +4,7 @@ const app = express();
 require("dotenv").config();
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const path = require('path');
 // Allow specific frontend (during development)
 app.use(
   cors({
