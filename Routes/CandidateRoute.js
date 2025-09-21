@@ -21,7 +21,8 @@ const storage = multer.diskStorage({
     cb(null, "uploads/"); // folder to store images
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + "-" + file.originalname);
+     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // unique filename
   },
 });
 const upload = multer({ storage });
@@ -30,12 +31,18 @@ router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async 
   try {
     if (!(await checkAdmin(req.user.id)))
       return res.status(403).json({ message: "user is not an admin" });
-    const data = req.body;
-    // const partySymbol= req.file ? req.file.path : "";
-    // if(!partySymbol){
-    //   return res.status(400).json({message:"Party symbol is required"});
-    // }
-    const newCandidate = new candidate({...data});
+    
+    const newCandidate = new candidate({
+      name: req.body.name,
+      aadhar: req.body.aadhar,
+      password: req.body.password,
+      party: req.body.party,
+      age: req.body.age,
+      partySymbol: {
+        data: req.file.buffer,
+        contentType: req.file.mimetype
+      }
+    });
     const savedCandidate = await newCandidate.save();
     res.status(200).json(savedCandidate);
   } catch (err) {
@@ -53,7 +60,7 @@ router.get("/", jwtMiddleware, async (req, res) => {
       party: c.party,
       age: c.age,
       id: c._id,
-      partySymbol: c.partySymbol,
+      partySymbol: c.partySymbol.data.toString('base64'), // Convert Buffer to base64 string
       aadhar: c.aadhar
     }));
     return res.status(200).json(data);
