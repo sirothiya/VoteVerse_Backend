@@ -59,7 +59,7 @@ router.get("/", jwtMiddleware, async (req, res) => {
       party: c.party,
       age: c.age,
       id: c._id,
-      partySymbol: `http://localhost:5173/${c.partySymbol.replace(/\\/g, '/')}`, // Convert Buffer to base64 string
+      partySymbol:`https://voteverse-backend.onrender.com/${c.partySymbol.replace(/\\/g, '/')}`, // Convert Buffer to base64 string
       aadhar: c.aadhar
     }));
     return res.status(200).json(data);
