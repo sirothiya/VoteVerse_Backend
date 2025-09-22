@@ -28,11 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.post(
-  "/addcandidate",
-  jwtMiddleware,
-  upload.single("partySymbol"),
-  async (req, res) => {
+router.post("/addcandidate", jwtMiddleware,upload.single("partySymbol"),async (req, res) => {
     try {
       if (!(await checkAdmin(req.user.id)))
         return res.status(403).json({ message: "user is not an admin" });
@@ -46,58 +42,18 @@ router.post(
         partySymbol: req.file.path,
       });
       const savedCandidate = await newCandidate.save();
-      const payload = {
-        id: newUser.id,
-        aadhar: newUser.aadhar,
-      };
-      const token = generateToken(payload);
-      res.status(200).json({ savedCandidate, token });
+    //    const payload = {
+    //     id: newUser.id,
+    //     aadhar: newUser.aadhar,
+    //   };
+    //   const token = generateToken(payload);
+      res.status(200).json({ savedCandidate });
     } catch (err) {
       console.error("Error adding candidate:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   }
 );
-
-router.post("/login", async (req, res) => {
-  try {
-    const { aadhar, password } = req.body;
-    console.log("1");
-    const candidate = await candidate.findOne({ aadhar });
-    console.log("11");
-    if(!candidate){
-      return res.status(401).json({error:"candidate not found, please signup"});
-    }
-    if (!candidate || !(await candidate.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid aadhar or password" }); 
-    }
-    console.log("111");
-    const payload = {
-      id: user.id,
-      aadhar: user.aadhar,
-    };
-    console.log("1111");
-    const token = generateToken(payload);
-    console.log("11111");
-    return res.status(200).json({
-      user: {
-        id: user.id,
-        name: user.name,
-        age: user.age,
-        email: user.email,
-        mobile: user.mobile,
-        address: user.address,
-        aadhar: user.aadhar,
-        role: user.role,
-        isVoted: user.isVoted,
-      },
-      token,
-    });
-  } catch (err) {
-    console.error("Error logging in user:", err);
-    return res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 router.get("/", jwtMiddleware, async (req, res) => {
   try {
