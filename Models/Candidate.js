@@ -43,7 +43,6 @@ const candidateSchema=new mongoose.Schema({
     partySymbol:{
        type: String,
     required: true,
-    unique: true
     }
 
 })

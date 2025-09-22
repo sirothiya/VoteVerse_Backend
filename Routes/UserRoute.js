@@ -50,7 +50,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({error:"User not found, please signup"});
     }
     if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid aadhar or password" });
+      return res.status(401).json({ error: "Invalid aadhar or password" }); 
     }
     console.log("111");
     const payload = {

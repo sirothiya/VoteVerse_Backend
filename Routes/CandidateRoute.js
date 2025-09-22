@@ -20,11 +20,11 @@ const checkAdmin = async (userId) => {
 };
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/"); // folder to store images
+    return cb(null, "./uploads"); // folder to store images
   },
   filename: (req, file, cb) => {
      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname)); // unique filename
+   return cb(null, uniqueSuffix + path.extname(file.originalname)); // unique filename
   },
 });
 const upload = multer({ storage });
@@ -38,7 +38,7 @@ router.post("/addcandidate", jwtMiddleware, upload.single("partySymbol"), async 
       name: req.body.name,
       aadhar: req.body.aadhar,
       password: req.body.password,
-      party: req.body.party,
+      party: req.body.party, 
       age: req.body.age,
       partySymbol:  req.file.path
     });
