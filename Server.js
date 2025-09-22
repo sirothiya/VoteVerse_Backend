@@ -22,9 +22,11 @@ const db = require("./db");
 const candidateRoute = require("./Routes/CandidateRoute");
 const userRoute = require("./Routes/UserRoute");
 const geminiRoute = require("./Routes/Gemini");
+const AdminRoute=require("./Routes/AdminRoutes")
 app.use("/candidate", candidateRoute);
 app.use("/user", userRoute);
 app.use("/gemini", geminiRoute);
+app.use("/admin",AdminRoute)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // app.use('/uploads', express.static('uploads'));
 
