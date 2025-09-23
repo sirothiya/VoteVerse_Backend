@@ -43,5 +43,18 @@ router.post("/login", async (req, res) => {
   }
 });
 
+router.get("/:id",jwtMiddleware, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const ummedwar = await candidate.findById(id);
+    if (!ummedwar) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+    res.status(200).json(ummedwar);
+  } catch (err) {
+    console.log("Error fetching candidate by ID:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 module.exports = router;
