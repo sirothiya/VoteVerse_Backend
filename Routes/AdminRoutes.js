@@ -42,12 +42,12 @@ router.post("/addcandidate", jwtMiddleware,upload.single("partySymbol"),async (r
         partySymbol: req.file.path,
       });
       const savedCandidate = await newCandidate.save();
-    //    const payload = {
-    //     id: newUser.id,
-    //     aadhar: newUser.aadhar,
-    //   };
-    //   const token = generateToken(payload);
-      res.status(200).json({ savedCandidate });
+       const payload = {
+        id: savedCandidate.id,
+        aadhar: savedCandidate.aadhar,
+      };
+      const token = generateToken(payload);
+     return res.status(200).json({ savedCandidate ,token});
     } catch (err) {
       console.error("Error adding candidate:", err);
       res.status(500).json({ error: "Internal server error" });
