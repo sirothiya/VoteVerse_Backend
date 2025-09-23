@@ -1,5 +1,7 @@
 const mongoose=require('mongoose')
 const { type } = require('os')
+const brcypt = require("bcrypt");
+
 
 const candidateSchema=new mongoose.Schema({
     name:{
