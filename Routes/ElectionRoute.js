@@ -4,8 +4,8 @@ const Election = require("../Models/Election");
 
 router.post("/start", async (req, res) => {
   try {
-    const { endTime } = req.body;
-    const startTime = new Date();
+    const { endTime ,startTime} = req.body;
+    // const startTime = new Date();
 
     const election = await Election.findOneAndUpdate(
       {}, // or specific election if multiple
