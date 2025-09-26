@@ -38,6 +38,21 @@ router.get("/status", async (req, res) => {
   return res.json(election);
 });
 
+router.post('/stop', async (req,res)=>{
+  try{
+    const _id=req.body.id;
+    const election=await Election.updateOne({_id},{isActive:false});
+    return res.json(election);
+
+  }catch(err){
+    console.error(err);
+    res.status(500).json({message:'Error stopping election'});
+  };
+});
+
+
+
+
 router.post("/vote", async (req, res) => {
   const { candidateId } = req.body;
 
