@@ -38,9 +38,9 @@ router.get("/status", async (req, res) => {
   return res.json(election);
 });
 
-router.post('/stop', async (req,res)=>{
+router.post('/stop/:id', async (req,res)=>{
   try{
-    const _id=req.body.id;
+    const _id=req.params.id;
     const election=await Election.updateOne({_id},{isActive:false});
     return res.json(election);
 
