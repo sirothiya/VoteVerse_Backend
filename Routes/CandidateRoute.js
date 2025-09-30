@@ -57,7 +57,7 @@ router.get("/:id",jwtMiddleware, async (req, res) => {
   }
 });
 
-router.put("/update-profile/:id", async (req, res) => {
+router.put("/update-profile/:id",jwtMiddleware, async (req, res) => {
   const { education, profession, bio, manifesto, video, socialLinks, achievements } = req.body;
 
   const candid = await candidate.findById(req.params.id);
@@ -74,7 +74,7 @@ router.put("/update-profile/:id", async (req, res) => {
   candid.isProfileComplete = true; // mark complete
 
   await candid.save();
-  
+
   res.json({ message: "Profile updated", candidate });
 });
 
