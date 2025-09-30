@@ -30,7 +30,7 @@ router.get("/status", async (req, res) => {
   if (!election) return res.json({ isActive: false });
 
   // Auto deactivate if time passed
-  if (election.isActive && new Date() > election.endTime) {
+  if (election.isActive && election.endTime && new Date() > election.endTime) {
     election.isActive = false;
     await election.save();
   }
