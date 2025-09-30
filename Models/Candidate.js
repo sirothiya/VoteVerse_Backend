@@ -45,7 +45,20 @@ const candidateSchema=new mongoose.Schema({
     partySymbol:{
        type: String,
     required: true,
-    }
+    },
+    // Candidate filled
+  education: String,
+  profession: String,
+  bio: String,
+  manifesto: String,
+  campaignVideo: String, // file path
+  achievements: [String],
+  socialLinks: {
+    twitter: String,
+    linkedin: String,
+    website: String,
+  },
+   isProfileComplete: { type: Boolean, default: false }
 
 })
 
