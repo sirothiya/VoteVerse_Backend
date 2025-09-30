@@ -38,6 +38,16 @@ router.get("/status", async (req, res) => {
   return res.json(election);
 });
 
+router.post("/changeStatus/:status",async (req,res)=>{
+  try{
+   const status=req.params.status;
+   const response =await Election.updateOne({isActive:status});
+   return res.status(200).json({message:"status changed successfully"});
+  }catch(err){
+    console.log(err);
+  }
+})
+
 router.post('/stop/:id', async (req,res)=>{
   try{
     const _id=req.params.id;
