@@ -47,11 +47,11 @@ const candidateSchema=new mongoose.Schema({
     required: true,
     },
     // Candidate filled
-  education: String,
-  profession: String,
-  bio: String,
-  manifesto: String,
-  campaignVideo: String, // file path
+   education:{type:String}, 
+  profession:{type:String},
+  bio: {type:String},
+  manifesto: {type:String},
+  campaignVideo: {type:String}, // file path
   achievements: [String],
   socialLinks: {
     twitter: String,
