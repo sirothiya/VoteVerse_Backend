@@ -57,4 +57,28 @@ router.get("/:id",jwtMiddleware, async (req, res) => {
   }
 });
 
+router.put("/update-profile/:id", async (req, res) => {
+  const { education, profession, bio, manifesto, video, socialLinks, achievements } = req.body;
+
+  const candid = await candidate.findById(req.params.id);
+  if (!candid) return res.status(404).json({ message: "Candidate not found" });
+
+  // Update fields
+  candid.profession = profession;
+  candid.education = education;
+  candid.bio = bio;
+  candid.manifesto = manifesto;
+  candid.video = video;
+  candid.socialLinks = socialLinks || [];
+  candid.achievements = achievements || [];
+  candid.isProfileComplete = true; // mark complete
+
+  await candid.save();
+  
+  res.json({ message: "Profile updated", candidate });
+});
+
+
+
+
 module.exports = router;
