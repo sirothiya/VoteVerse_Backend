@@ -34,6 +34,7 @@ router.post("/login", async (req, res) => {
         addhar:can.aadhar,
         partySymbol:can.partySymbol,
        party:can.party,
+       isProfileComplete: can.isProfileComplete,
       },
       token,
     });
@@ -72,7 +73,7 @@ router.put("/update-profile/:id",jwtMiddleware, async (req, res) => {
   candid.education = education;
   candid.bio = bio;
   candid.manifesto = manifesto;
-  candid.video = video;
+  candid.Video = video;
   candid.socialLinks = socialLinks || [];
   candid.achievements = achievements || [];
   candid.isProfileComplete = true; // mark complete
