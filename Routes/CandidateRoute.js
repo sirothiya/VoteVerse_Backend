@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
-const candidate = require("../Models/Candidate");
+const Candidate = require("../Models/Candidate");
 const User = require("../Models/User");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
@@ -10,7 +10,7 @@ router.post("/login", async (req, res) => {
   try {
     const { aadhar, password } = req.body;
     console.log("1");
-    const can = await candidate.findOne({ aadhar });
+    const can = await Candidate.findOne({ aadhar });
     console.log("11");
     if(!can){
       return res.status(401).json({error:"candidate not found, please signup"});
@@ -46,7 +46,7 @@ router.post("/login", async (req, res) => {
 router.get("/:id",jwtMiddleware, async (req, res) => {
   try {
     const id = req.params.id;
-    const ummedwar = await candidate.findById(id);
+    const ummedwar = await Candidate.findById(id);
     if (!ummedwar) {
       return res.status(404).json({ message: "Candidate not found" });
     }
@@ -64,7 +64,7 @@ router.get("/:id",jwtMiddleware, async (req, res) => {
 router.put("/update-profile/:id",jwtMiddleware, async (req, res) => {
   const { education, profession, bio, manifesto, video, socialLinks, achievements } = req.body;
 
-  const candid = await candidate.findById(req.params.id);
+  const candid = await Candidate.findById(req.params.id);
   if (!candid) return res.status(404).json({ message: "Candidate not found" });
 
   // Update fields

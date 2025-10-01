@@ -51,7 +51,7 @@ const candidateSchema=new mongoose.Schema({
   profession:{type:String},
   bio: {type:String},
   manifesto: {type:String},
-  campaignVideo: {type:String}, // file path
+  Video: {type:String}, // file path
   achievements: [String],
   socialLinks: {
     twitter: String,
@@ -82,8 +82,8 @@ candidateSchema.methods.checkProfileComplete = function () {
     this.profession &&
     this.bio &&
     this.manifesto &&
-    this.campaignVideo &&
-    this.achievements.length > 0 ||
+    this.Video &&
+    this.achievements.length > 0 &&
     this.socialLinks &&
     (this.socialLinks.twitter || this.socialLinks.linkedin || this.socialLinks.website)
   );
