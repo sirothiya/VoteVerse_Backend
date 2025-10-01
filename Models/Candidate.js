@@ -76,6 +76,20 @@ candidateSchema.pre("save", async function (next) {
   }
 });
 
+candidateSchema.methods.checkProfileComplete = function () {
+  return (
+    this.education &&
+    this.profession &&
+    this.bio &&
+    this.manifesto &&
+    this.campaignVideo &&
+    this.achievements.length > 0 ||
+    this.socialLinks &&
+    (this.socialLinks.twitter || this.socialLinks.linkedin || this.socialLinks.website)
+  );
+};
+
+
 candidateSchema.methods.comparePassword=async function(password){
     console.log("2")
     const user=this;
