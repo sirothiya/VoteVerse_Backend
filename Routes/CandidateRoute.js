@@ -1,10 +1,30 @@
 const express = require("express");
 const router = express.Router();
+const multer =require("multer")
+const path=require("path")
 
 const Candidate = require("../Models/Candidate");
 const User = require("../Models/User");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
+
+// ------------------ File Upload Setup ------------------
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    if (file.fieldname === "manifesto") {
+      cb(null, "uploads/manifestos/");
+    } else if (file.fieldname === "video") {
+      cb(null, "uploads/videos/");
+    } else {
+      cb(null, "uploads/others/");
+    }
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({ storage });
 
 router.post("/login", async (req, res) => {
   try {
@@ -62,26 +82,76 @@ router.get("/:id",jwtMiddleware, async (req, res) => {
   }
 });
 
-router.put("/update-profile/:id",jwtMiddleware, async (req, res) => {
-  const { education, profession, bio, manifesto, video, socialLinks, achievements } = req.body;
+router.put(
+  "/update-profile/:id",
+  jwtMiddleware,
+  upload.fields([
+    { name: "manifesto", maxCount: 1 },
+    { name: "video", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const candidateId = req.params.id;
 
-  const candid = await Candidate.findById(req.params.id);
-  if (!candid) return res.status(404).json({ message: "Candidate not found" });
+      // Get candidate from DB
+      const candidate = await Candidate.findById(candidateId);
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
 
-  // Update fields
-  candid.profession = profession;
-  candid.education = education;
-  candid.bio = bio;
-  candid.manifesto = manifesto;
-  candid.Video = video;
-  candid.socialLinks = socialLinks || [];
-  candid.achievements = achievements || [];
-  candid.isProfileComplete = true; // mark complete
+      // Extract fields from body
+      const { education, profession, bio, socialLinks, achievements } = req.body;
 
-  await candid.save();
+      if (education) candidate.education = education;
+      if (profession) candidate.profession = profession;
+      if (bio) candidate.bio = bio;
 
-  res.json({ message: "Profile updated", candidate });
-});
+      // handle social links (JSON expected)
+      if (socialLinks) {
+        try {
+          const links = JSON.parse(socialLinks);
+          candidate.socialLinks = {
+            twitter: links.twitter || "",
+            linkedin: links.linkedin || "",
+            website: links.website || "",
+          };
+        } catch (err) {
+          console.log("Error parsing socialLinks:", err);
+        }
+      }
+
+      // handle achievements (comma-separated string OR array)
+      if (achievements) {
+        if (Array.isArray(achievements)) {
+          candidate.achievements = achievements;
+        } else {
+          candidate.achievements = achievements.split(",").map((a) => a.trim());
+        }
+      }
+
+      // handle files
+      if (req.files["manifesto"]) {
+        candidate.manifesto = "/uploads/manifestos/" + req.files["manifesto"][0].filename;
+      }
+      if (req.files["video"]) {
+        candidate.Video = "/uploads/videos/" + req.files["video"][0].filename;
+      }
+
+      // update isProfileComplete automatically
+      candidate.isProfileComplete = candidate.checkProfileComplete();
+
+      await candidate.save();
+
+      return res.status(200).json({
+        message: "Profile updated successfully",
+        candidate,
+      });
+    } catch (err) {
+      console.error("Error updating candidate profile:", err);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
 
 
 
