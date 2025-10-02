@@ -1,81 +1,197 @@
-const mongoose=require('mongoose')
-const { type } = require('os')
-const brcypt = require("bcrypt");
+// const mongoose=require('mongoose')
+// const { type } = require('os')
+// const brcypt = require("bcrypt");
 
 
-const candidateSchema=new mongoose.Schema({
-    name:{
-        type:String,
-        required:true
-    },
-    aadhar:{
-        type:String,
-        required:true,
-        unique:true,
-        length:12
-    },
-    password:{
-        type:String,
-        required:true
-    },
-    party:{
-        type:String,
-        required:true,
-        unique:true,
-    },
-    age:{
-        type:Number,
-        required:true
-    },
-    votes:[{
-        user:{
-            type:mongoose.Schema.Types.ObjectId,
-            ref:'User',
-            required:true        
-        },
-        votedAt:{
-            type:Date,
-            required:true
-        }
-    }],
-    voteCount:{
-        type:Number,
-        default:0
-    },
-    partySymbol:{
-       type: String,
+// const candidateSchema=new mongoose.Schema({
+//     name:{
+//         type:String,
+//         required:true
+//     },
+//     aadhar:{
+//         type:String,
+//         required:true,
+//         unique:true,
+//         length:12
+//     },
+//     password:{
+//         type:String,
+//         required:true
+//     },
+//     party:{
+//         type:String,
+//         required:true,
+//         unique:true,
+//     },
+//     age:{
+//         type:Number,
+//         required:true
+//     },
+//     votes:[{
+//         user:{
+//             type:mongoose.Schema.Types.ObjectId,
+//             ref:'User',
+//             required:true        
+//         },
+//         votedAt:{
+//             type:Date,
+//             required:true
+//         }
+//     }],
+//     voteCount:{
+//         type:Number,
+//         default:0
+//     },
+//     partySymbol:{
+//        type: String,
+//     required: true,
+//     },
+//     // Candidate filled
+//    education:{type:String}, 
+//   profession:{type:String},
+//   bio: {type:String},
+//   manifesto: {type:String},
+//   Video: {type:String}, // file path
+//   achievements:{ type: [String], default: [] },
+//   socialLinks: {
+//      twitter: { type: String, default: "" },
+//   linkedin: { type: String, default: "" },
+//   website: { type: String, default: "" },
+//   },
+//    isProfileComplete: { type: Boolean, default: false }
+
+// })
+
+// candidateSchema.pre("save", async function (next) {
+//   const user = this;
+//   if (!user.isModified("password")) return next();
+//   try {
+//     const salt = await brcypt.genSalt(10);
+//     const hashedPassword = await brcypt.hash(user.password, salt);
+//     user.password = hashedPassword;
+    
+//   } catch (err) {
+//     console.log("error in hashing Password:", err);
+//     next(err);
+//   }
+// });
+
+// candidateSchema.methods.checkProfileComplete = function () {
+//   return (
+//     this.education &&
+//     this.profession &&
+//     this.bio &&
+//     this.manifesto &&
+//     this.Video &&
+//     this.achievements.length > 0 &&
+//     this.socialLinks &&
+//     (this.socialLinks.twitter || this.socialLinks.linkedin || this.socialLinks.website)
+//   );
+// };
+
+
+// candidateSchema.methods.comparePassword=async function(password){
+//     console.log("2")
+//     const user=this;
+//     console.log("22")
+//     try{
+//         const isMatch= await brcypt.compare(password,user.password)
+//        console.log("222") 
+//        return isMatch
+//     }catch(err){
+//         console.log("Error in comparing password:",err)
+//         throw err
+//     }
+// }
+
+// const Candidate=mongoose.model('Candidate',candidateSchema)
+// module.exports=Candidate
+
+
+const mongoose = require("mongoose");
+const bcrypt = require("bcrypt");
+
+const candidateSchema = new mongoose.Schema({
+  name: {
+    type: String,
     required: true,
-    },
-    // Candidate filled
-   education:{type:String}, 
-  profession:{type:String},
-  bio: {type:String},
-  manifesto: {type:String},
-  Video: {type:String}, // file path
-  achievements: [String],
-  socialLinks: {
-    twitter: String,
-    linkedin: String,
-    website: String,
   },
-   isProfileComplete: { type: Boolean, default: false }
+  aadhar: {
+    type: String,
+    required: true,
+    unique: true,
+    length: 12,
+  },
+  password: {
+    type: String,
+    required: true,
+  },
+  party: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  age: {
+    type: Number,
+    required: true,
+  },
+  votes: [
+    {
+      user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true,
+      },
+      votedAt: {
+        type: Date,
+        required: true,
+      },
+    },
+  ],
+  voteCount: {
+    type: Number,
+    default: 0,
+  },
+  partySymbol: {
+    type: String,
+    required: true,
+  },
 
-})
+  // Candidate filled
+  education: { type: String },
+  profession: { type: String },
+  bio: { type: String },
+  manifesto: { type: String },
+  Video: { type: String }, // file path
+  achievements: { type: [String], default: [] },
+  socialLinks: {
+    twitter: { type: String, default: "" },
+    linkedin: { type: String, default: "" },
+    website: { type: String, default: "" },
+  },
+  isProfileComplete: { type: Boolean, default: false },
+});
 
+/**
+ * Hash password before saving
+ */
 candidateSchema.pre("save", async function (next) {
   const user = this;
   if (!user.isModified("password")) return next();
   try {
-    const salt = await brcypt.genSalt(10);
-    const hashedPassword = await brcypt.hash(user.password, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(user.password, salt);
     user.password = hashedPassword;
-    
+    next();
   } catch (err) {
-    console.log("error in hashing Password:", err);
+    console.log("Error in hashing Password:", err);
     next(err);
   }
 });
 
+/**
+ * Check if profile is complete
+ */
 candidateSchema.methods.checkProfileComplete = function () {
   return (
     this.education &&
@@ -83,26 +199,27 @@ candidateSchema.methods.checkProfileComplete = function () {
     this.bio &&
     this.manifesto &&
     this.Video &&
+    Array.isArray(this.achievements) &&
     this.achievements.length > 0 &&
     this.socialLinks &&
-    (this.socialLinks.twitter || this.socialLinks.linkedin || this.socialLinks.website)
+    (this.socialLinks.twitter ||
+      this.socialLinks.linkedin ||
+      this.socialLinks.website)
   );
 };
 
+/**
+ * Compare password
+ */
+candidateSchema.methods.comparePassword = async function (password) {
+  const user = this;
+  try {
+    return await bcrypt.compare(password, user.password);
+  } catch (err) {
+    console.log("Error in comparing password:", err);
+    throw err;
+  }
+};
 
-candidateSchema.methods.comparePassword=async function(password){
-    console.log("2")
-    const user=this;
-    console.log("22")
-    try{
-        const isMatch= await brcypt.compare(password,user.password)
-       console.log("222") 
-       return isMatch
-    }catch(err){
-        console.log("Error in comparing password:",err)
-        throw err
-    }
-}
-
-const Candidate=mongoose.model('Candidate',candidateSchema)
-module.exports=Candidate
+const Candidate = mongoose.model("Candidate", candidateSchema);
+module.exports = Candidate;
