@@ -28,16 +28,24 @@ const upload = multer({ storage });
 
 router.post("/candidateSignup", jwtMiddleware,async (req, res) => {
     try {
+      const data=req.body;
       const newCandidate = new Candidate({
-        name: req.body.name,
-        rollNumber: req.body.rollNumber,
-        password: req.body.password,
-      class: req.body.class,
-      dob: req.body.dob,
-      gender: req.body.gender,
-      position: req.body.position,
-      password: req.body.password,
+        name: data.name,
+        rollNumber: data.rollNumber,
+        password: data.password,
+      class: data.class,
+      dob: data.dob,
+      gender: data.gender,
+      position: data.position,
+      password: data.password,
       });
+       let num = parseInt(data.class.match(/\d+/)[0]);
+    if (num < 10)
+      return res
+        .status(400)
+        .json({
+          error: "Classes below 10 are not allowed to be a candidate",
+        });
       const savedCandidate = await newCandidate.save();
        const payload = {
         id: savedCandidate.id,
