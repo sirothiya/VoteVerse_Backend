@@ -26,6 +26,32 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+router.post("/candidateSignup", jwtMiddleware,async (req, res) => {
+    try {
+      const newCandidate = new Candidate({
+        name: req.body.name,
+        rollNumber: req.body.rollNumber,
+        password: req.body.password,
+      class: req.body.class,
+      dob: req.body.dob,
+      gender: req.body.gender,
+      position: req.body.position,
+      password: req.body.password,
+      });
+      const savedCandidate = await newCandidate.save();
+       const payload = {
+        id: savedCandidate.id,
+        rollNumber: savedCandidate.rollNumber,
+      };
+      const token = generateToken(payload);
+     return res.status(200).json({ savedCandidate ,token});
+    } catch (err) {
+      console.error("Error adding candidate:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+);
+
 router.post("/login", async (req, res) => {
   try {
     const { aadhar, password } = req.body;

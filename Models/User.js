@@ -6,29 +6,32 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  age: {
-    type: Number,
-    required: true,
-  },
-  email: {
+  rollNumber: {
     type: String,
-  },
-  mobile: {
-    type: String,
-  },
-  address: {
-    type: String,
-    required: true,
-  },
-  aadhar: {
-    type: Number,
     required: true,
     unique: true,
   },
+  class: {
+    type: String, // e.g., "10-B"
+    required: true,
+  },
+  dob: {
+    type: Date,
+    required: true,
+  },
+
+  // Auth
   password: {
     type: String,
     required: true,
   },
+
+  // Voting Info
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+  
   role: {
     type: String,
     enum: ["Voter", "Admin"],

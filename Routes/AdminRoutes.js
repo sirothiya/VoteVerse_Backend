@@ -28,32 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.post("/addcandidate", jwtMiddleware,upload.single("partySymbol"),async (req, res) => {
-    try {
-      if (!(await checkAdmin(req.user.id)))
-        return res.status(403).json({ message: "user is not an admin" });
 
-      const newCandidate = new candidate({
-        name: req.body.name,
-        aadhar: req.body.aadhar,
-        password: req.body.password,
-        party: req.body.party,
-        age: req.body.age,
-        partySymbol: req.file.path,
-      });
-      const savedCandidate = await newCandidate.save();
-       const payload = {
-        id: savedCandidate.id,
-        aadhar: savedCandidate.aadhar,
-      };
-      const token = generateToken(payload);
-     return res.status(200).json({ savedCandidate ,token});
-    } catch (err) {
-      console.error("Error adding candidate:", err);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  }
-);
 
 router.get("/", jwtMiddleware, async (req, res) => {
   try {

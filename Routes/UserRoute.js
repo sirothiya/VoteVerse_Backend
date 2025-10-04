@@ -5,33 +5,32 @@ const User = require("../Models/User");
 const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
-
-
-router.post("/signup", async (req, res) => {
+router.post("/userSignup", async (req, res) => {
   try {
     const data = req.body;
     console.log("Signup Data:", data);
     const isAdmin = await User.findOne({ role: "Admin" });
     if (data.role == "Admin" && isAdmin)
       return res.status(403).json({ error: "Admin already exists" });
-
-    // validate aadhar card number must be 12digit
-    if (!/^\d{12}$/.test(data.aadhar))
+    let num = parseInt(data.class.match(/\d+/)[0]);
+    if (num < 6)
       return res
         .status(400)
-        .json({ error: "Invalid Aadhar number1:must be 12 digit number" });
+        .json({
+          error: "Classes below 6 are not allowed to particiapte in election",
+        });
 
-    const existingUser = await User.findOne({ aadhar: data.aadhar });
+    const existingUser = await User.findOne({ rollNumber: data.rollNumber });
     if (existingUser)
       return res
         .status(400)
-        .json({ error: "Aadhar number already registered" });
+        .json({ error: "User with this rollnumber already registered" });
     const user = new User(data);
     const newUser = await user.save();
     console.log("User created successfully");
     const payload = {
       id: newUser.id,
-      aadhar: newUser.aadhar,
+      rollNumber: newUser.rollNumber,
     };
     const token = generateToken(payload);
     res.status(201).json({ newUser, token });
@@ -42,20 +41,20 @@ router.post("/signup", async (req, res) => {
 });
 router.post("/login", async (req, res) => {
   try {
-    const { aadhar, password } = req.body;
+    const { rollNumber, password } = req.body;
     console.log("1");
-    const user = await User.findOne({ aadhar });
+    const user = await User.findOne({ rollNumber });
     console.log("11");
-    if(!user){
-      return res.status(401).json({error:"User not found, please signup"});
+    if (!user) {
+      return res.status(401).json({ error: "User not found, please signup" });
     }
     if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid aadhar or password" }); 
+      return res.status(401).json({ error: "Invalid aadhar or password" });
     }
     console.log("111");
     const payload = {
       id: user.id,
-      aadhar: user.aadhar,
+      rollNumber: user.rollNumber,
     };
     console.log("1111");
     const token = generateToken(payload);
@@ -64,11 +63,9 @@ router.post("/login", async (req, res) => {
       user: {
         id: user.id,
         name: user.name,
-        age: user.age,
-        email: user.email,
-        mobile: user.mobile,
-        address: user.address,
-        aadhar: user.aadhar,
+        rollNumber: user.rollNumber,
+        class: user.class,
+        dob: user.dob,
         role: user.role,
         isVoted: user.isVoted,
       },
@@ -82,8 +79,8 @@ router.post("/login", async (req, res) => {
 
 router.get("/profile", jwtMiddleware, async (req, res) => {
   try {
-    const aadhar = req.user.aadhar;
-    const user = await User.findOne({ aadhar });
+    const rollNumber = req.user.rollNumber;
+    const user = await User.findOne({ rollNumber });
     if (!user) {
       return res.status(404).json({ error: "User not found please signup" });
     }
@@ -94,15 +91,15 @@ router.get("/profile", jwtMiddleware, async (req, res) => {
   }
 });
 // I am updating user restricted to only update all except aadhar,isVoted,role
-router.put("/:aadhar", jwtMiddleware, async (req, res) => {
-  const restrictedFields = ["aadhar", "isVoted", "role"];
+router.put("/:rollNumber", jwtMiddleware, async (req, res) => {
+  const restrictedFields = ["rollNumber", "isVoted", "role"];
   try {
-    const aadhar = req.params.aadhar;
+    const rollNumber = req.params.rollNumber;
     const updates = req.body;
-    const oldData = await User.findOne({ aadhar });
+    const oldData = await User.findOne({ rollNumber });
     if (restrictedFields.some((field) => field in updates)) {
       return res.status(403).json({
-        error: "You are not allowed to update aadhar, role and isVoted",
+        error: "You are not allowed to update rollNumber, role and isVoted",
       });
     }
     const updatedUser = await User.findByIdAndUpdate(oldData.id, updates, {

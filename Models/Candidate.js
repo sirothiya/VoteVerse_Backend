@@ -1,113 +1,3 @@
-// const mongoose=require('mongoose')
-// const { type } = require('os')
-// const brcypt = require("bcrypt");
-
-
-// const candidateSchema=new mongoose.Schema({
-//     name:{
-//         type:String,
-//         required:true
-//     },
-//     aadhar:{
-//         type:String,
-//         required:true,
-//         unique:true,
-//         length:12
-//     },
-//     password:{
-//         type:String,
-//         required:true
-//     },
-//     party:{
-//         type:String,
-//         required:true,
-//         unique:true,
-//     },
-//     age:{
-//         type:Number,
-//         required:true
-//     },
-//     votes:[{
-//         user:{
-//             type:mongoose.Schema.Types.ObjectId,
-//             ref:'User',
-//             required:true        
-//         },
-//         votedAt:{
-//             type:Date,
-//             required:true
-//         }
-//     }],
-//     voteCount:{
-//         type:Number,
-//         default:0
-//     },
-//     partySymbol:{
-//        type: String,
-//     required: true,
-//     },
-//     // Candidate filled
-//    education:{type:String}, 
-//   profession:{type:String},
-//   bio: {type:String},
-//   manifesto: {type:String},
-//   Video: {type:String}, // file path
-//   achievements:{ type: [String], default: [] },
-//   socialLinks: {
-//      twitter: { type: String, default: "" },
-//   linkedin: { type: String, default: "" },
-//   website: { type: String, default: "" },
-//   },
-//    isProfileComplete: { type: Boolean, default: false }
-
-// })
-
-// candidateSchema.pre("save", async function (next) {
-//   const user = this;
-//   if (!user.isModified("password")) return next();
-//   try {
-//     const salt = await brcypt.genSalt(10);
-//     const hashedPassword = await brcypt.hash(user.password, salt);
-//     user.password = hashedPassword;
-    
-//   } catch (err) {
-//     console.log("error in hashing Password:", err);
-//     next(err);
-//   }
-// });
-
-// candidateSchema.methods.checkProfileComplete = function () {
-//   return (
-//     this.education &&
-//     this.profession &&
-//     this.bio &&
-//     this.manifesto &&
-//     this.Video &&
-//     this.achievements.length > 0 &&
-//     this.socialLinks &&
-//     (this.socialLinks.twitter || this.socialLinks.linkedin || this.socialLinks.website)
-//   );
-// };
-
-
-// candidateSchema.methods.comparePassword=async function(password){
-//     console.log("2")
-//     const user=this;
-//     console.log("22")
-//     try{
-//         const isMatch= await brcypt.compare(password,user.password)
-//        console.log("222") 
-//        return isMatch
-//     }catch(err){
-//         console.log("Error in comparing password:",err)
-//         throw err
-//     }
-// }
-
-// const Candidate=mongoose.model('Candidate',candidateSchema)
-// module.exports=Candidate
-
-
 const mongoose = require("mongoose");
 const bcrypt = require("bcrypt");
 
@@ -116,24 +6,75 @@ const candidateSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  aadhar: {
+  rollNumber: {
     type: String,
     required: true,
     unique: true,
-    length: 12,
   },
+  class: {
+    type: String, // e.g., "12-A"
+    required: true,
+  },
+  dob: {
+    type: Date,
+    required: true,
+  },
+  gender: {
+    type: String,
+    enum: ["Male", "Female", "Other"],
+  },
+
+  // Auth
   password: {
     type: String,
     required: true,
   },
-  party: {
+
+  // Election-Specific
+  position: {
+    type: String,
+    enum: ["Head Boy", "Head Girl"],
+    required: true,
+  },
+  manifesto: {
     type: String,
     required: true,
-    unique: true,
   },
-  age: {
-    type: Number,
+  campaignVideo: {
+    type: String, // file path or URL
+  },
+  achievements: [
+    {
+      type: String, // bullet points
+    },
+  ],
+  initiatives: [
+    {
+      type: String, // promises / goals
+    },
+  ],
+  profilePhoto: {
+    type: String, // file path or URL
+  },
+  partysymbol: {
+    type: String,
     required: true,
+  },
+
+  // Verification
+  parentalConsent: {
+    type: String, // file path / yes-no
+  },
+  declarationSigned: {
+    type: Boolean,
+    default: false,
+  },
+
+  // Admin Controls
+  status: {
+    type: String,
+    enum: ["Pending", "Approved", "Rejected"],
+    default: "Pending",
   },
   votes: [
     {
@@ -151,25 +92,7 @@ const candidateSchema = new mongoose.Schema({
   voteCount: {
     type: Number,
     default: 0,
-  },
-  partySymbol: {
-    type: String,
-    required: true,
-  },
-
-  // Candidate filled
-  education: { type: String },
-  profession: { type: String },
-  bio: { type: String },
-  manifesto: { type: String },
-  Video: { type: String }, // file path
-  achievements: { type: [String], default: [] },
-  socialLinks: {
-    twitter: { type: String, default: "" },
-    linkedin: { type: String, default: "" },
-    website: { type: String, default: "" },
-  },
-  isProfileComplete: { type: Boolean, default: false },
+  }
 });
 
 /**
