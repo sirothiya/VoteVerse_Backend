@@ -26,8 +26,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post("/candidateSignup",async (req, res) => {
-  db.users.dropIndex("aadhar_1");
-
+  
     try {
       const data=req.body;
       const newCandidate = new Candidate({
