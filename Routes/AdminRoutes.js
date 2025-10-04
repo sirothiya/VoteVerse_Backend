@@ -33,8 +33,8 @@ router.post("/adminSignup",async(req,res)=>{
   try{
     const data=req.body;
     const count= await Admin.countDocuments();
-    if(count>0){
-      return res.status(400).json({count:count});
+    if(count>1){
+      return res.status(400).json({Error:"Already an admin exists"});
     }
     const admin= new Admin({
       name:data.name,
