@@ -4,7 +4,6 @@ const multer =require("multer")
 const path=require("path")
 
 const Candidate = require("../Models/Candidate");
-const User = require("../Models/User");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
 
