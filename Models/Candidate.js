@@ -58,7 +58,6 @@ const candidateSchema = new mongoose.Schema({
   },
   partysymbol: {
     type: String,
-    required: true,
   },
 
   // Verification
