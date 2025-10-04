@@ -26,7 +26,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-router.post("/candidateSignup", jwtMiddleware,async (req, res) => {
+router.post("/candidateSignup",async (req, res) => {
     try {
       const data=req.body;
       const newCandidate = new Candidate({
