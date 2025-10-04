@@ -28,7 +28,6 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
-const Admin=require("../Models/Admin")
 
 router.post("/adminSignup",async(req,res)=>{
   try{
