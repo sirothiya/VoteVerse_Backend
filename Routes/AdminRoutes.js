@@ -54,7 +54,7 @@ router.post("/adminLogin",async(req,res)=>{
     const {email,password}=req.body;
     const admin=Admin.findOne({email});
     if(!admin){
-      return res.status(400).json({error:"Admin with this email not found"});
+      return res.status(401).json({error:"Admin with this email not found"});
     }
     if(!admin || await (admin.comparePassword(password))){
       return res.status(401).json({ error: "Invalid aadhar or password" });
