@@ -38,7 +38,6 @@ const candidateSchema = new mongoose.Schema({
   },
   manifesto: {
     type: String,
-    required: true,
   },
   campaignVideo: {
     type: String, // file path or URL
