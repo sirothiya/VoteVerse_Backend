@@ -5,6 +5,7 @@ const path = require("path");
 
 const candidate = require("../Models/Candidate");
 const User = require("../Models/User");
+const Admin=require("../Models/Admin")
 const { generateToken, jwtMiddleware } = require("../jwt");
 
 const checkAdmin = async (userId) => {
@@ -27,27 +28,41 @@ const storage = multer.diskStorage({
   },
 });
 const upload = multer({ storage });
+const Admin=require("../Models/Admin")
 
+router.post("/adminSignup",async(req,res)=>{
+  try{
+    const data=req.body;
+    const count= await Admin.countDocuments();
+    if(count>0){
+      return res.status(400).json({count:count});
+    }
+    const admin= new Admin({
+      name:data.name,
+      email:data.email,
+      schoolName:data.schoolName,
+      password:data.password
+    })
+  await admin.save();
+   res.status(201).json({ message: "Admin account created successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+})
 
-
-router.get("/", jwtMiddleware, async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    console.log("User ID from token:", req.user.id);
-    const candidates = await candidate.find();
-    const data = candidates.map((c) => ({
+    const candidates = await Admin.find();
+    if(candidate.length>1)return res.status(400).json({error:"Admin Already Exist"});
+    const data = candidates?.map((c) => ({
       name: c.name,
-      party: c.party,
-      age: c.age,
+      email: c.email,
+      schoolName: c.schoolName,
       id: c._id,
-      partySymbol: `https://voteverse-backend.onrender.com/${c.partySymbol.replace(
-        /\\/g,
-        "/"
-      )}`, // Convert Buffer to base64 string
-      aadhar: c.aadhar,
     }));
     return res.status(200).json(data);
   } catch (err) {
-    console.log("Error fetching candidates:", err);
+    console.log("Error fetching admin:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });

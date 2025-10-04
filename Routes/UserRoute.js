@@ -9,9 +9,6 @@ router.post("/userSignup", async (req, res) => {
   try {
     const data = req.body;
     console.log("Signup Data:", data);
-    const isAdmin = await User.findOne({ role: "Admin" });
-    if (data.role == "Admin" && isAdmin)
-      return res.status(403).json({ error: "Admin already exists" });
     let num = parseInt(data.class.match(/\d+/)[0]);
     if (num < 6)
       return res
