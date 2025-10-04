@@ -135,9 +135,9 @@ candidateSchema.methods.checkProfileComplete = function () {
  * Compare password
  */
 candidateSchema.methods.comparePassword = async function (password) {
-  const user = this;
+  const candidate = this;
   try {
-    return await bcrypt.compare(password, user.password);
+    return await bcrypt.compare(password, candidate.password);
   } catch (err) {
     console.log("Error in comparing password:", err);
     throw err;

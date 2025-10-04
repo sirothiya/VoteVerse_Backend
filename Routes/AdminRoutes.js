@@ -50,6 +50,32 @@ router.post("/adminSignup",async(req,res)=>{
   }
 })
 
+router.post("/adminLogin",async(req,res)=>{
+  try{
+    const {email,password}=req.body;
+    const admin=Admin.findOne({email});
+    if(!admin){
+      return res.status(400).json({error:"Admin with this email not found"});
+    }
+    if(!admin || await (admin.comparePassword(password))){
+      return res.status(401).json({ error: "Invalid aadhar or password" });
+    }
+    const payload={
+      id:admin.id,
+      rollNumber:admin.rollNumber
+    }
+    const token=generateToken(payload);
+    return res.status(200).json({
+      name:admin.name,
+      email:admin.email,
+      school:admin.school
+    },token)
+  }catch(err){
+console.error("Error logging in user:", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+})
+
 router.get("/", async (req, res) => {
   try {
     const candidates = await Admin.find();

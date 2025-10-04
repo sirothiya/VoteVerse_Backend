@@ -60,11 +60,11 @@ router.post("/candidateSignup", jwtMiddleware,async (req, res) => {
   }
 );
 
-router.post("/login", async (req, res) => {
+router.post("/candidateLogin", async (req, res) => {
   try {
-    const { aadhar, password } = req.body;
+    const { rollNumber, password } = req.body;
     console.log("1");
-    const can = await Candidate.findOne({ aadhar });
+    const can = await Candidate.findOne({ rollNumber });
     console.log("11");
     if(!can){
       return res.status(401).json({error:"candidate not found, please signup"});
@@ -75,7 +75,7 @@ router.post("/login", async (req, res) => {
     console.log("111");
     const payload = {
       id: can.id,
-      aadhar: can.aadhar,
+      rollNumber: can.rollNumber,
     };
     console.log("1111");
     const token = generateToken(payload);
@@ -84,11 +84,11 @@ router.post("/login", async (req, res) => {
       participant: {
         id: can.id,
         name: can.name,
-        age: can.age,
-        addhar:can.aadhar,
-        partySymbol:can.partySymbol,
-       party:can.party,
-       isProfileComplete: can.isProfileComplete,
+        rollNumber:can.rollNumber,
+        class:can.class,
+        dob:can.dob,
+        gender:can.gender,
+        position:can.position
       },
       token,
     });

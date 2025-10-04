@@ -36,7 +36,7 @@ router.post("/userSignup", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-router.post("/login", async (req, res) => {
+router.post("/userLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
     console.log("1");
@@ -46,7 +46,7 @@ router.post("/login", async (req, res) => {
       return res.status(401).json({ error: "User not found, please signup" });
     }
     if (!user || !(await user.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid aadhar or password" });
+      return res.status(401).json({ error: "Invalid rollNumber or password" });
     }
     console.log("111");
     const payload = {
