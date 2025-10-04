@@ -39,6 +39,7 @@ router.post("/candidateSignup",async (req, res) => {
       position: data.position,
       password: data.password,
       });
+      console.log("check1")
        let num = parseInt(data.class.match(/\d+/)[0]);
     if (num < 10)
       return res
@@ -46,12 +47,16 @@ router.post("/candidateSignup",async (req, res) => {
         .json({
           error: "Classes below 10 are not allowed to be a candidate",
         });
+        console.log("check2")
       const savedCandidate = await newCandidate.save();
+      console.log("check3")
        const payload = {
         id: savedCandidate.id,
         rollNumber: savedCandidate.rollNumber,
       };
+      console.log("check4")
       const token = generateToken(payload);
+      console.log("check5")
      return res.status(200).json({ savedCandidate ,token});
     } catch (err) {
       console.error("Error adding candidate:", err);
