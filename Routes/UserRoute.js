@@ -75,9 +75,9 @@ router.post("/userLogin", async (req, res) => {
   }
 });
 
-router.get("/profile", jwtMiddleware, async (req, res) => {
+router.get("/profile/rollNumber", jwtMiddleware, async (req, res) => {
   try {
-    const rollNumber = req.user.rollNumber;
+    const rollNumber = req.params.rollNumber;
     const user = await User.findOne({ rollNumber });
     if (!user) {
       return res.status(404).json({ error: "User not found please signup" });
