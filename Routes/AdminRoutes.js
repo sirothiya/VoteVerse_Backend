@@ -29,17 +29,24 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-router.post("/adminSignup",async(req,res)=>{
- try {
+rrouter.post("/adminSignup", async (req, res) => {
+  try {
     const data = req.body;
 
-    // Check if an admin already exists
-    const existingAdmin = await Admin.findOne();
-    if (existingAdmin) {
-      return res.status(400).json({ error: "An admin account already exists" });
+    // Validate required fields
+    if (!data.name || !data.email || !data.schoolName || !data.password) {
+      return res.status(400).json({ error: "All fields are required" });
     }
 
-    // Hash the password
+    // Check if an admin already exists for the same school
+    const existingAdmin = await Admin.findOne({ schoolName: data.schoolName });
+    if (existingAdmin) {
+      return res
+        .status(400)
+        .json({ error: `An admin for ${data.schoolName} already exists` });
+    }
+
+    // Hash the password securely
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(data.password, salt);
 
@@ -52,8 +59,10 @@ router.post("/adminSignup",async(req,res)=>{
     });
 
     await admin.save();
-    res.status(200).json({ message: "Admin account created successfully" });
 
+    res
+      .status(201)
+      .json({ message: `Admin for ${data.schoolName} created successfully` });
   } catch (error) {
     console.error("Error creating admin:", error);
     res.status(500).json({ error: "Internal Server Error" });
