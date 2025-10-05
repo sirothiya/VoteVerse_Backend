@@ -46,16 +46,12 @@ router.post("/adminSignup", async (req, res) => {
         .json({ error: `An admin for ${data.schoolName} already exists` });
     }
 
-    // Hash the password securely
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(data.password, salt);
-
     // Create new admin
     const admin = new Admin({
       name: data.name,
       email: data.email,
       schoolName: data.schoolName,
-      password: hashedPassword,
+      password: data.password,
     });
 
     await admin.save();
