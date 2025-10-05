@@ -82,6 +82,7 @@ router.get("/profile/:rollNumber", jwtMiddleware, async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: "User not found please signup" });
     }
+    console.log("user :" ,user);
     res.status(200).json({ user });
   } catch (err) {
     console.log("Error fetching user:", err);
