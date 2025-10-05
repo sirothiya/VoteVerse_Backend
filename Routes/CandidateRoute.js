@@ -10,13 +10,11 @@ const { generateToken, jwtMiddleware } = require("../jwt");
 // ------------------ File Upload Setup ------------------
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (file.fieldname === "manifesto") {
-      cb(null, "uploads/manifestos/");
-    } else if (file.fieldname === "video") {
-      cb(null, "uploads/videos/");
-    } else {
-      cb(null, "uploads/others/");
-    }
+    if (file.fieldname === "manifesto") cb(null, "uploads/manifestos/");
+    else if (file.fieldname === "campaignVideo") cb(null, "uploads/videos/");
+    else if (file.fieldname === "profilePhoto") cb(null, "uploads/photos/");
+    else if (file.fieldname === "parentalConsent") cb(null, "uploads/consents/");
+    else cb(null, "uploads/others/");
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -111,9 +109,6 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
     if (!ummedwar) {
       return res.status(401).json({ message: "Candidate not found" });
     }
-    
-    await ummedwar.save();
-    
    return res.status(200).json(ummedwar);
   } catch (err) {
     console.log("Error fetching candidate by ID:", err);
@@ -121,70 +116,44 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   }
 });
 
-router.put(
+router.post(
   "/update-profile/:id",
   jwtMiddleware,
   upload.fields([
     { name: "manifesto", maxCount: 1 },
-    { name: "video", maxCount: 1 },
+    { name: "campaignVideo", maxCount: 1 },
+    { name: "profilePhoto", maxCount: 1 },
+    { name: "parentalConsent", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
       const candidateId = req.params.id;
-
-      // Get candidate from DB
+      const data=req.body;
+      const files=req.files;
       const candidate = await Candidate.findById(candidateId);
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
+      // Get candidate from DB
+       const updateData = {
+        manifesto: files.manifesto ? files.manifesto[0].path : undefined,
+        campaignVideo: files.campaignVideo ? files.campaignVideo[0].path : undefined,
+        profilePhoto: files.profilePhoto ? files.profilePhoto[0].path : undefined,
+        parentalConsent: files.parentalConsent ? files.parentalConsent[0].path : undefined,
+        achievements: data.achievements ? JSON.parse(data.achievements) : [],
+        initiatives: data.initiatives ? JSON.parse(data.initiatives) : [],
+        declarationSigned: data.declarationSigned === "true",
+      };
+      
+       const updatedCandidate = await Candidate.findByIdAndUpdate(
+        candidateId,
+        { $set: updateData },
+        { new: true }
+      );
 
       // Extract fields from body
-      const { education, profession, bio, socialLinks, achievements } = req.body;
-
-      if (education) candidate.education = education;
-      if (profession) candidate.profession = profession;
-      if (bio) candidate.bio = bio;
-
-      // handle social links (JSON expected)
-      if (socialLinks) {
-        try {
-          const links = JSON.parse(socialLinks);
-          candidate.socialLinks = {
-            twitter: links.twitter || "",
-            linkedin: links.linkedin || "",
-            website: links.website || "",
-          };
-        } catch (err) {
-          console.log("Error parsing socialLinks:", err);
-        }
-      }
-
-      // handle achievements (comma-separated string OR array)
-      if (achievements) {
-        if (Array.isArray(achievements)) {
-          candidate.achievements = achievements;
-        } else {
-          candidate.achievements = achievements.split(",").map((a) => a.trim());
-        }
-      }
-
-      // handle files
-      if (req.files["manifesto"]) {
-        candidate.manifesto = "/uploads/manifestos/" + req.files["manifesto"][0].filename;
-      }
-      if (req.files["video"]) {
-        candidate.Video = "/uploads/videos/" + req.files["video"][0].filename;
-      }
-
-      // update isProfileComplete automatically
-      candidate.isProfileComplete = candidate.checkProfileComplete();
-
-      await candidate.save();
-
-      return res.status(200).json({
-        message: "Profile updated successfully",
-        candidate,
-      });
+      res.status(200).json({ message: "Profile updated successfully", updatedCandidate });
+      
     } catch (err) {
       console.error("Error updating candidate profile:", err);
       return res.status(500).json({ error: "Internal server error" });
