@@ -29,7 +29,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-rrouter.post("/adminSignup", async (req, res) => {
+router.post("/adminSignup", async (req, res) => {
   try {
     const data = req.body;
 
