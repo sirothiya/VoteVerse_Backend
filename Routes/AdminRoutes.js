@@ -52,7 +52,7 @@ router.post("/adminSignup",async(req,res)=>{
     });
 
     await admin.save();
-    res.status(201).json({ message: "Admin account created successfully" });
+    res.status(200).json({ message: "Admin account created successfully" });
 
   } catch (error) {
     console.error("Error creating admin:", error);
