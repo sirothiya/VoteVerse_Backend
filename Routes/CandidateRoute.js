@@ -107,7 +107,7 @@ router.post("/candidateLogin", async (req, res) => {
 router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.id;
-    const ummedwar = await Candidate.findById(rollNumber);
+    const ummedwar = await Candidate.findOne(rollNumber);
     if (!ummedwar) {
       return res.status(401).json({ message: "Candidate not found" });
     }
