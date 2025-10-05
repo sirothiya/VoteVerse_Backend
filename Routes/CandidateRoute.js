@@ -104,15 +104,14 @@ router.post("/candidateLogin", async (req, res) => {
   }
 });
 
-router.get("/:id",jwtMiddleware, async (req, res) => {
+router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   try {
-    const id = req.params.id;
-    const ummedwar = await Candidate.findById(id);
+    const rollNumber = req.params.id;
+    const ummedwar = await Candidate.findById(rollNumber);
     if (!ummedwar) {
-      return res.status(404).json({ message: "Candidate not found" });
+      return res.status(401).json({ message: "Candidate not found" });
     }
-    const checkProfile= ummedwar.checkProfileComplete();
-    ummedwar.isProfileComplete=checkProfile;
+    
     await ummedwar.save();
     
    return res.status(200).json(ummedwar);

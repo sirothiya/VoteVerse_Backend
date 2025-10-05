@@ -113,21 +113,21 @@ candidateSchema.pre("save", async function (next) {
 /**
  * Check if profile is complete
  */
-candidateSchema.methods.checkProfileComplete = function () {
-  return (
-    this.education &&
-    this.profession &&
-    this.bio &&
-    this.manifesto &&
-    this.Video &&
-    Array.isArray(this.achievements) &&
-    this.achievements.length > 0 &&
-    this.socialLinks &&
-    (this.socialLinks.twitter ||
-      this.socialLinks.linkedin ||
-      this.socialLinks.website)
-  );
-};
+// candidateSchema.methods.checkProfileComplete = function () {
+//   return (
+//     this.education &&
+//     this.profession &&
+//     this.bio &&
+//     this.manifesto &&
+//     this.Video &&
+//     Array.isArray(this.achievements) &&
+//     this.achievements.length > 0 &&
+//     this.socialLinks &&
+//     (this.socialLinks.twitter ||
+//       this.socialLinks.linkedin ||
+//       this.socialLinks.website)
+//   );
+// };
 
 /**
  * Compare password
