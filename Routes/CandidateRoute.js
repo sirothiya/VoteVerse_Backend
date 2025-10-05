@@ -86,7 +86,8 @@ router.post("/candidateLogin", async (req, res) => {
     const token = generateToken(payload);
     console.log("11111");
     return res.status(200).json({
-      participant: {
+      message:"Canidate login successfull",
+      Candidate: {
         id: can.id,
         name: can.name,
         rollNumber:can.rollNumber,

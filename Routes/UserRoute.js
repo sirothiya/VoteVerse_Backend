@@ -57,7 +57,8 @@ router.post("/userLogin", async (req, res) => {
     const token = generateToken(payload);
     console.log("11111");
     return res.status(200).json({
-      user: {
+      message:"User login successful",
+      User: {
         id: user.id,
         name: user.name,
         rollNumber: user.rollNumber,

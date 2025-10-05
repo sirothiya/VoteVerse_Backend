@@ -65,31 +65,44 @@ router.post("/adminSignup", async (req, res) => {
   }
 });
 
-router.post("/adminLogin",async(req,res)=>{
-  try{
-    const {email,password}=req.body;
-    const admin=Admin.findOne({email});
-    if(!admin){
-      return res.status(401).json({error:"Admin with this email not found"});
+router.post("/adminLogin", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // ✅ Must await this
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
+      return res.status(401).json({ error: "Admin with this email not found" });
     }
-    if(!admin || await (admin.comparePassword(password))){
-      return res.status(401).json({ error: "Invalid aadhar or password" });
+
+    // ✅ Use your schema method properly
+    const isMatch = await admin.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid password" });
     }
-    const payload={
-      id:admin.id,
-      rollNumber:admin.rollNumber
-    }
-    const token=generateToken(payload);
+
+    // ✅ Prepare token payload
+    const payload = {
+      id: admin._id,
+      email: admin.email,
+    };
+
+    const token = generateToken(payload);
+
     return res.status(200).json({
-      name:admin.name,
-      email:admin.email,
-      school:admin.school
-    },token)
-  }catch(err){
-console.error("Error logging in user:", err);
+      message: "Admin login successful",
+      token,
+      Admin: {
+        name: admin.name,
+        email: admin.email,
+        schoolName: admin.schoolName,
+      },
+    });
+  } catch (err) {
+    console.error("Error logging in admin:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 router.get("/", async (req, res) => {
   try {
