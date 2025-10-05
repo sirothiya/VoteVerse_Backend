@@ -75,7 +75,7 @@ router.post("/userLogin", async (req, res) => {
   }
 });
 
-router.get("/profile/rollNumber", jwtMiddleware, async (req, res) => {
+router.get("/profile/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
     const user = await User.findOne({ rollNumber });
