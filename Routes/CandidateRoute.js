@@ -116,7 +116,7 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   }
 });
 
-router.get("/checkprofilestatus/:rollNumber",async(req,res)=>{
+router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
     const rollNumber=req.params.rollNumber;
     const candidate=await Candidate.findOne({rollNumber});
