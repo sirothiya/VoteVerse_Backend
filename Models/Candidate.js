@@ -67,7 +67,10 @@ const candidateSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-
+  profilecompleted:{
+     type:Boolean,
+     default:false
+  },
   // Admin Controls
   status: {
     type: String,
@@ -109,29 +112,27 @@ candidateSchema.pre("save", async function (next) {
     next(err);
   }
 });
+candidateSchema.pre("save", function (next) {
+  this.profilecompleted = this.checkProfileComplete();
+  next();
+});
 
-/**
- * Check if profile is complete
- */
-// candidateSchema.methods.checkProfileComplete = function () {
-//   return (
-//     this.education &&
-//     this.profession &&
-//     this.bio &&
-//     this.manifesto &&
-//     this.Video &&
-//     Array.isArray(this.achievements) &&
-//     this.achievements.length > 0 &&
-//     this.socialLinks &&
-//     (this.socialLinks.twitter ||
-//       this.socialLinks.linkedin ||
-//       this.socialLinks.website)
-//   );
-// };
 
-/**
- * Compare password
- */
+candidateSchema.methods.checkProfileComplete = function () {
+  return (
+    this.manifesto &&
+    this.campaignVideo &&
+    this.achievements &&
+    this.achievements.length > 0 &&
+    this.initiatives &&
+    this.initiatives.length > 0 &&
+    this.profilePhoto &&
+    this.partysymbol &&
+    this.parentalConsent &&
+    this.declarationSigned === true
+  );
+};
+
 candidateSchema.methods.comparePassword = async function (password) {
   const candidate = this;
   try {

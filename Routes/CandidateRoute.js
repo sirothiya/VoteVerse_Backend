@@ -104,17 +104,34 @@ router.post("/candidateLogin", async (req, res) => {
 
 router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   try {
-    const rollNumber = req.params.id;
+    const rollNumber = req.params.rollNumber;
     const ummedwar = await Candidate.findOne(rollNumber);
     if (!ummedwar) {
       return res.status(401).json({ message: "Candidate not found" });
     }
    return res.status(200).json(ummedwar);
   } catch (err) {
-    console.log("Error fetching candidate by ID:", err);
+    console.log("Error fetching candidate by rollNumber:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+router.get("/checkprofilestatus/:rollNumber",async(req,res)=>{
+  try{
+    const rollNumber=req.params.rollNumber;
+    const candidate=await Candidate.findOne(rollNumber);
+    const isComplete=candidate.checkProfileComplete();
+    const status=candidate.status;
+    res.json({
+      profileCompleted: isComplete,
+      status:status
+    });
+
+  }catch(err){
+    res.status(500).json({ message: "Error checking profile", error: err.message });
+  }
+})
+
 
 router.post(
   "/update-profile/:id",
