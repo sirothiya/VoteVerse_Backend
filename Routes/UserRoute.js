@@ -45,6 +45,7 @@ router.post("/userLogin", async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: "User not found, please signup" });
     }
+    
     if (!user || !(await user.comparePassword(password))) {
       return res.status(401).json({ error: "Invalid rollNumber or password" });
     }

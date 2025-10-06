@@ -105,7 +105,7 @@ router.post("/candidateLogin", async (req, res) => {
 router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const ummedwar = await Candidate.findOne(rollNumber);
+    const ummedwar = await Candidate.findOne({rollNumber});
     if (!ummedwar) {
       return res.status(401).json({ message: "Candidate not found" });
     }
@@ -119,7 +119,7 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
 router.get("/checkprofilestatus/:rollNumber",async(req,res)=>{
   try{
     const rollNumber=req.params.rollNumber;
-    const candidate=await Candidate.findOne(rollNumber);
+    const candidate=await Candidate.findOne({rollNumber});
     const isComplete=candidate.checkProfileComplete();
     const status=candidate.status;
     res.json({
