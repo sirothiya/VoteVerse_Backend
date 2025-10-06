@@ -123,7 +123,7 @@ router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
     const isComplete=candidate.checkProfileComplete();
     const status=candidate.status;
     res.json({
-      profileCompleted: isComplete,
+      profileCompleted: isComplete || "",
       status:status
     });
 
