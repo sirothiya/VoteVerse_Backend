@@ -120,7 +120,15 @@ router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
     const rollNumber=req.params.rollNumber;
     const candidate=await Candidate.findOne({rollNumber});
-    const isComplete=candidate.checkProfileComplete();
+   if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+    if (typeof candidate.checkProfileComplete !== "function") {
+      candidate = Candidate.hydrate(candidate);
+    }
+
+    // Ensure checkProfileComplete returns boolean (use Boolean() to coerce)
+    const isComplete = Boolean(candidate.checkProfileComplete());
     const status=candidate.status;
     res.json({
       profileCompleted: isComplete || "",
