@@ -10,7 +10,13 @@ const path = require("path");
 const multer = require("multer");
 
 // Ensure folders exist
-["uploads/manifestos","uploads/videos","uploads/photos","uploads/consents","uploads/others"].forEach(dir => {
+[
+  "uploads/manifestos",
+  "uploads/videos",
+  "uploads/photos",
+  "uploads/consents",
+  "uploads/others",
+].forEach((dir) => {
   const fullPath = path.join(__dirname, "..", dir);
   if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
 });
@@ -30,7 +36,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
-
 
 router.post("/candidateSignup", async (req, res) => {
   try {
@@ -132,7 +137,7 @@ router.get(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      let candidate = await Candidate.findOne({ rollNumber }) // 'let' since we might reassign
+      let candidate = await Candidate.findOne({ rollNumber }); // 'let' since we might reassign
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
@@ -175,11 +180,12 @@ router.post(
     { name: "campaignVideo", maxCount: 1 },
     { name: "profilePhoto", maxCount: 1 },
     { name: "parentalConsent", maxCount: 1 },
+    { name: "partysymbol", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      const candidate = await Candidate.findOne({rollNumber});
+      const candidate = await Candidate.findOne({ rollNumber });
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
@@ -208,6 +214,9 @@ router.post(
         initiatives: data.initiatives
           ? JSON.parse(data.initiatives)
           : candidate.initiatives,
+        partysymbol: files?.partysymbol
+          ? files.partysymbol[0].path
+          : candidate.partysymbol,
         declarationSigned: data.declarationSigned === "true" ? true : false,
       };
       console.log("updated data :", updateData);
