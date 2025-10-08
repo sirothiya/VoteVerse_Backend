@@ -1,7 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const path = require("path");
 
 const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
