@@ -118,29 +118,37 @@ router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
-  try{
-    const rollNumber=req.params.rollNumber;
-    const candidate=await Candidate.findOne({rollNumber}).lean();
-   if (!candidate) {
+router.get("/checkprofilestatus/:rollNumber", jwtMiddleware, async (req, res) => {
+  try {
+    const rollNumber = req.params.rollNumber;
+    let candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
+
+    if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
-    if (typeof candidate.checkProfileComplete !== "function") {
-      candidate = Candidate.hydrate(candidate);
-    }
-    //  console.log(typeof checkProfileComplete);
-    
-    const isComplete = candidate.checkProfileComplete();
-    const status=candidate.status;
-   return res.json({
-      profileCompleted: isComplete || "",
-      status:status
+
+    const isComplete = candidate.manifesto &&
+    candidate.campaignVideo &&
+    candidate.achievements &&
+    candidate.achievements.length > 0 &&
+    candidate.initiatives &&
+    candidate.initiatives.length > 0 &&
+    candidate.profilePhoto &&
+    candidate.partysymbol &&
+    candidate.parentalConsent &&
+    candidate.declarationSigned === true
+    const status = candidate.status;
+
+    res.json({
+      profileCompleted: isComplete || false,
+      status: status
     });
 
-  }catch(err){
-    return res.status(500).json({ message: "Error checking profile", error: err.message });
+  } catch (err) {
+    console.error("Error checking profile:", err);
+    res.status(500).json({ message: "Error checking profile", error: err.message });
   }
-})
+});
 
 
 router.post(
