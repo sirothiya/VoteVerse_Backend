@@ -226,7 +226,7 @@ router.post(
       candidate.profilecompleted = isComplete;
       await candidate.save();
       return res.status(200).json({
-        message: candidate.profilecompleted
+        message: isComplete
           ? "Profile completed successfully!"
           : "Profile updated, but still incomplete.",
         updatedCandidate: candidate,
