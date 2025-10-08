@@ -157,7 +157,7 @@ router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
 
 
 router.post(
-  "/update-profile/:id",
+  "/complete-profile/:rollNumber",
   jwtMiddleware,
   upload.fields([
     { name: "manifesto", maxCount: 1 },
@@ -167,41 +167,45 @@ router.post(
   ]),
   async (req, res) => {
     try {
-      const candidateId = req.params.id;
-      const data=req.body;
-      const files=req.files;
-      const candidate = await Candidate.findById(candidateId);
+      const rollNumber = req.params.rollNumber;
+      const candidate = await Candidate.findById(rollNumber);
+
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
-      // Get candidate from DB
-       const updateData = {
-        manifesto: files.manifesto ? files.manifesto[0].path : undefined,
-        campaignVideo: files.campaignVideo ? files.campaignVideo[0].path : undefined,
-        profilePhoto: files.profilePhoto ? files.profilePhoto[0].path : undefined,
-        parentalConsent: files.parentalConsent ? files.parentalConsent[0].path : undefined,
-        achievements: data.achievements ? JSON.parse(data.achievements) : [],
-        initiatives: data.initiatives ? JSON.parse(data.initiatives) : [],
-        declarationSigned: data.declarationSigned === "true",
-      };
-      
-       const updatedCandidate = await Candidate.findByIdAndUpdate(
-        candidateId,
-        { $set: updateData },
-        { new: true }
-      );
 
-      // Extract fields from body
-      res.status(200).json({ message: "Profile updated successfully", updatedCandidate });
-      
+      const files = req.files;
+      const data = req.body;
+
+      // Construct update data
+      const updateData = {
+        manifesto: files?.manifesto ? files.manifesto[0].path : candidate.manifesto,
+        campaignVideo: files?.campaignVideo ? files.campaignVideo[0].path : candidate.campaignVideo,
+        profilePhoto: files?.profilePhoto ? files.profilePhoto[0].path : candidate.profilePhoto,
+        parentalConsent: files?.parentalConsent ? files.parentalConsent[0].path : candidate.parentalConsent,
+        achievements: data.achievements ? JSON.parse(data.achievements) : candidate.achievements,
+        initiatives: data.initiatives ? JSON.parse(data.initiatives) : candidate.initiatives,
+        declarationSigned: data.declarationSigned === "true" ? true : false,
+      };
+
+      // Update candidate
+      Object.assign(candidate, updateData);
+
+      // Recalculate profile completion
+      candidate.profilecompleted = candidate.checkProfileComplete();
+
+      await candidate.save();
+
+      res.status(200).json({
+        message: candidate.profilecompleted
+          ? "Profile completed successfully!"
+          : "Profile updated, but still incomplete.",
+        updatedCandidate: candidate,
+      });
     } catch (err) {
-      console.error("Error updating candidate profile:", err);
-      return res.status(500).json({ error: "Internal server error" });
+      console.error("Error in complete-profile:", err);
+      res.status(500).json({ error: "Internal server error" });
     }
   }
 );
-
-
-
-
 module.exports = router;
