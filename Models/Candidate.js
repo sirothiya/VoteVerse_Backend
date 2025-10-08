@@ -119,6 +119,8 @@ candidateSchema.pre("save", function (next) {
 
 
 candidateSchema.methods.checkProfileComplete = function () {
+  console.log("manifesto:", this.manifesto);
+  console.log("achievements:", this.achievements);
   return (
     this.manifesto &&
     this.campaignVideo &&

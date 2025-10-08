@@ -114,21 +114,23 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
     console.log("Error fetching candidate by rollNumber:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-});
+});if (typeof candidate.checkProfileComplete !== "function") {
+      candidate = Candidate.hydrate(candidate);
+    }
 
 router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
     const rollNumber=req.params.rollNumber;
-    const candidate=await Candidate.findOne({rollNumber});
+    const candidate=await Candidate.findOne({rollNumber}).lean();
    if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
     if (typeof candidate.checkProfileComplete !== "function") {
       candidate = Candidate.hydrate(candidate);
     }
-
-    // Ensure checkProfileComplete returns boolean (use Boolean() to coerce)
-    const isComplete = Boolean(candidate.checkProfileComplete());
+     console.log(typeof checkProfileComplete);
+    
+    const isComplete = candidate.checkProfileComplete();
     const status=candidate.status;
     res.json({
       profileCompleted: isComplete || "",
