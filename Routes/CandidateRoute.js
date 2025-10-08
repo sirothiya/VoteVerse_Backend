@@ -102,32 +102,19 @@ router.post("/candidateLogin", async (req, res) => {
   }
 });
 
-router.get("/checkprofilestatus/:rollNumber", jwtMiddleware, async (req, res) => {
+router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    let candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
+    const candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
-
-    // Hydrate if needed
-    if (typeof candidate.checkProfileComplete !== "function") {
-      candidate = Candidate.hydrate(candidate);
-    }
-
-    const isComplete = candidate.checkProfileComplete();
-    const status = candidate.status;
-    console.log("iscomplete: ",isComplete)
-
-    res.json({
-      profileCompleted: isComplete || " ",
-      status: status
-    });
+   return  res.status(200).json({candidate});
 
   } catch (err) {
     console.error("Error checking profile:", err);
-    res.status(500).json({ message: "Error checking profile", error: err.message });
+   return  res.status(500).json({ message: "Error checking profile", error: err.message });
   }
 });
 
@@ -145,13 +132,13 @@ router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
     
     const isComplete = candidate.checkProfileComplete();
     const status=candidate.status;
-    res.json({
+   return res.json({
       profileCompleted: isComplete || "",
       status:status
     });
 
   }catch(err){
-    res.status(500).json({ message: "Error checking profile", error: err.message });
+    return res.status(500).json({ message: "Error checking profile", error: err.message });
   }
 })
 
