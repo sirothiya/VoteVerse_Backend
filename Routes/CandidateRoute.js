@@ -114,9 +114,7 @@ router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
     console.log("Error fetching candidate by rollNumber:", err);
     res.status(500).json({ error: "Internal server error" });
   }
-});if (typeof candidate.checkProfileComplete !== "function") {
-      candidate = Candidate.hydrate(candidate);
-    }
+});
 
 router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
