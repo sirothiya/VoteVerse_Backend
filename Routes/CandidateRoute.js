@@ -132,7 +132,7 @@ router.get(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      let candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
+      let candidate = await Candidate.findOne({ rollNumber }) // 'let' since we might reassign
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
@@ -151,6 +151,7 @@ router.get(
         candidate.declarationSigned === true;
       candidate.profilecompleted = isComplete;
       const status = candidate.status;
+
       await candidate.save();
 
       res.json({
