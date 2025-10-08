@@ -118,9 +118,10 @@ router.get("/checkprofilestatus/:rollNumber", jwtMiddleware, async (req, res) =>
 
     const isComplete = candidate.checkProfileComplete();
     const status = candidate.status;
+    console.log("iscomplete: ",isComplete)
 
     res.json({
-      profileCompleted: isComplete || false,
+      profileCompleted: isComplete || " ",
       status: status
     });
 
