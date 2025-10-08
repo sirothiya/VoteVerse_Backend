@@ -102,17 +102,31 @@ router.post("/candidateLogin", async (req, res) => {
   }
 });
 
-router.get("/:rollNumber",jwtMiddleware, async (req, res) => {
+router.get("/checkprofilestatus/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const ummedwar = await Candidate.findOne({rollNumber});
-    if (!ummedwar) {
-      return res.status(401).json({ message: "Candidate not found" });
+    let candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
     }
-   return res.status(200).json(ummedwar);
+
+    // Hydrate if needed
+    if (typeof candidate.checkProfileComplete !== "function") {
+      candidate = Candidate.hydrate(candidate);
+    }
+
+    const isComplete = candidate.checkProfileComplete();
+    const status = candidate.status;
+
+    res.json({
+      profileCompleted: isComplete || false,
+      status: status
+    });
+
   } catch (err) {
-    console.log("Error fetching candidate by rollNumber:", err);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error checking profile:", err);
+    res.status(500).json({ message: "Error checking profile", error: err.message });
   }
 });
 
