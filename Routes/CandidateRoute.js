@@ -7,14 +7,24 @@ const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
 // ------------------ File Upload Setup ------------------
+const fs = require("fs");
+const path = require("path");
+const multer = require("multer");
+
+// Ensure folders exist
+["uploads/manifestos","uploads/videos","uploads/photos","uploads/consents","uploads/others"].forEach(dir => {
+  const fullPath = path.join(__dirname, "..", dir);
+  if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true });
+});
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    if (file.fieldname === "manifesto") cb(null, "uploads/manifestos/");
-    else if (file.fieldname === "campaignVideo") cb(null, "uploads/videos/");
-    else if (file.fieldname === "profilePhoto") cb(null, "uploads/photos/");
-    else if (file.fieldname === "parentalConsent")
-      cb(null, "uploads/consents/");
-    else cb(null, "uploads/others/");
+    let folder = "uploads/others";
+    if (file.fieldname === "manifesto") folder = "uploads/manifestos";
+    else if (file.fieldname === "campaignVideo") folder = "uploads/videos";
+    else if (file.fieldname === "profilePhoto") folder = "uploads/photos";
+    else if (file.fieldname === "parentalConsent") folder = "uploads/consents";
+    cb(null, path.join(__dirname, "..", folder));
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
@@ -22,6 +32,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
 
 router.post("/candidateSignup", async (req, res) => {
   try {
@@ -169,7 +180,7 @@ router.post(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      const candidate = await Candidate.findById(rollNumber);
+      const candidate = await Candidate.findOne({rollNumber});
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
