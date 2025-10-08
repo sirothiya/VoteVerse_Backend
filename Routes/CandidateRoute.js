@@ -126,7 +126,7 @@ router.get("/checkprofilestatus/:rollNumber",jwtMiddleware,async(req,res)=>{
     if (typeof candidate.checkProfileComplete !== "function") {
       candidate = Candidate.hydrate(candidate);
     }
-     console.log(typeof checkProfileComplete);
+    //  console.log(typeof checkProfileComplete);
     
     const isComplete = candidate.checkProfileComplete();
     const status=candidate.status;
