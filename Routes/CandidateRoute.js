@@ -113,6 +113,16 @@ router.post("/candidateLogin", async (req, res) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+router.get("/", async (req, res) => {
+  try {
+    const candidate = await Candidate.find();
+    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
+   return res.json(candidate);
+  } catch (err) {
+    console.error(err);
+   return  res.status(500).json({ message: "Server error" });
+  }
+});
 
 router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
