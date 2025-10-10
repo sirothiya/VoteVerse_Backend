@@ -112,28 +112,7 @@ candidateSchema.pre("save", async function (next) {
     next(err);
   }
 });
-candidateSchema.pre("save", function (next) {
-  this.profilecompleted = this.checkProfileComplete();
-  next();
-});
 
-
-candidateSchema.methods.checkProfileComplete = function () {
-  console.log("manifesto:", this.manifesto);
-  console.log("achievements:", this.achievements);
-  return (
-    this.manifesto &&
-    this.campaignVideo &&
-    this.achievements &&
-    this.achievements.length > 0 &&
-    this.initiatives &&
-    this.initiatives.length > 0 &&
-    this.profilePhoto &&
-    this.partysymbol &&
-    this.parentalConsent &&
-    this.declarationSigned === true
-  );
-};
 
 candidateSchema.methods.comparePassword = async function (password) {
   const candidate = this;
