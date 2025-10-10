@@ -117,11 +117,12 @@ router.post("/candidateLogin", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const candidate = await Candidate.find();
-    if (!candidate) return res.status(404).json({ message: "Candidate not found" });
-   return res.json(candidate);
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
+    return res.json(candidate);
   } catch (err) {
     console.error(err);
-   return  res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -208,20 +209,20 @@ router.post(
       // Construct update data
       const updateData = {
         manifesto: files?.manifesto
-  ? `/uploads/manifestos/${files.manifesto[0].filename}`
-  : candidate.manifesto,
-campaignVideo: files?.campaignVideo
-  ? `/uploads/videos/${files.campaignVideo[0].filename}`
-  : candidate.campaignVideo,
-profilePhoto: files?.profilePhoto
-  ? `/uploads/photos/${files.profilePhoto[0].filename}`
-  : candidate.profilePhoto,
-parentalConsent: files?.parentalConsent
-  ? `/uploads/consents/${files.parentalConsent[0].filename}`
-  : candidate.parentalConsent,
-partysymbol: files?.partysymbol
-  ? `/uploads/others/${files.partysymbol[0].filename}`
-  : candidate.partysymbol,
+          ? `/uploads/manifestos/${files.manifesto[0].filename}`
+          : candidate.manifesto,
+        campaignVideo: files?.campaignVideo
+          ? `/uploads/videos/${files.campaignVideo[0].filename}`
+          : candidate.campaignVideo,
+        profilePhoto: files?.profilePhoto
+          ? `/uploads/photos/${files.profilePhoto[0].filename}`
+          : candidate.profilePhoto,
+        parentalConsent: files?.parentalConsent
+          ? `/uploads/consents/${files.parentalConsent[0].filename}`
+          : candidate.parentalConsent,
+        partysymbol: files?.partysymbol
+          ? `/uploads/others/${files.partysymbol[0].filename}`
+          : candidate.partysymbol,
         achievements: data.achievements
           ? JSON.parse(data.achievements)
           : candidate.achievements,
@@ -258,7 +259,6 @@ partysymbol: files?.partysymbol
     }
   }
 );
-
 
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
@@ -311,7 +311,5 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
     });
   }
 });
-
-
 
 module.exports = router;
