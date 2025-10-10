@@ -258,4 +258,62 @@ router.post(
     }
   }
 );
+
+import fs from "fs";
+import path from "path";
+
+// ✅ DELETE candidate by roll number
+router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
+  try {
+    const rollNumber = req.params.rollNumber;
+
+    // Find the candidate
+    const candidate = await Candidate.findOne({ rollNumber });
+
+    if (!candidate) {
+      return res.status(404).json({
+        success: false,
+        message: `Candidate with roll number ${rollNumber} not found.`,
+      });
+    }
+
+    // 🗑️ Delete uploaded files safely
+    const filesToDelete = [
+      candidate.profilePhoto,
+      candidate.manifesto,
+      candidate.campaignVideo,
+      candidate.partysymbol,
+      candidate.parentalConsent,
+    ];
+
+    filesToDelete.forEach((filePath) => {
+      if (filePath && fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`Deleted file: ${filePath}`);
+        } catch (err) {
+          console.error(`Error deleting file ${filePath}:`, err);
+        }
+      }
+    });
+
+    // 🧹 Delete the candidate document from DB
+    await Candidate.deleteOne({ rollNumber });
+
+    return res.status(200).json({
+      success: true,
+      message: `Candidate with roll number ${rollNumber} and all associated files deleted successfully.`,
+    });
+  } catch (err) {
+    console.error("Error deleting candidate:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Error deleting candidate and associated files.",
+      error: err.message,
+    });
+  }
+});
+
+
+
 module.exports = router;
