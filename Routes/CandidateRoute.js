@@ -208,26 +208,26 @@ router.post(
       // Construct update data
       const updateData = {
         manifesto: files?.manifesto
-          ? files.manifesto[0].path
-          : candidate.manifesto,
-        campaignVideo: files?.campaignVideo
-          ? files.campaignVideo[0].path
-          : candidate.campaignVideo,
-        profilePhoto: files?.profilePhoto
-          ? files.profilePhoto[0].path
-          : candidate.profilePhoto,
-        parentalConsent: files?.parentalConsent
-          ? files.parentalConsent[0].path
-          : candidate.parentalConsent,
+  ? `/uploads/manifestos/${files.manifesto[0].filename}`
+  : candidate.manifesto,
+campaignVideo: files?.campaignVideo
+  ? `/uploads/videos/${files.campaignVideo[0].filename}`
+  : candidate.campaignVideo,
+profilePhoto: files?.profilePhoto
+  ? `/uploads/photos/${files.profilePhoto[0].filename}`
+  : candidate.profilePhoto,
+parentalConsent: files?.parentalConsent
+  ? `/uploads/consents/${files.parentalConsent[0].filename}`
+  : candidate.parentalConsent,
+partysymbol: files?.partysymbol
+  ? `/uploads/others/${files.partysymbol[0].filename}`
+  : candidate.partysymbol,
         achievements: data.achievements
           ? JSON.parse(data.achievements)
           : candidate.achievements,
         initiatives: data.initiatives
           ? JSON.parse(data.initiatives)
           : candidate.initiatives,
-        partysymbol: files?.partysymbol
-          ? files.partysymbol[0].path
-          : candidate.partysymbol,
         declarationSigned: data.declarationSigned === "true" ? true : false,
       };
       console.log("updated data :", updateData);
