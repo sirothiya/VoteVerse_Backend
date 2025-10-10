@@ -63,6 +63,7 @@ router.post("/candidateSignup", async (req, res) => {
       id: savedCandidate.id,
       rollNumber: savedCandidate.rollNumber,
     };
+    await Candidate.collection.dropIndex("aadhar_1");
     console.log("check4");
     const token = generateToken(payload);
     console.log("check5");
