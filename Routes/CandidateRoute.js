@@ -259,8 +259,6 @@ router.post(
   }
 );
 
-import fs from "fs";
-import path from "path";
 
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
