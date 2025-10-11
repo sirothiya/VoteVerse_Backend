@@ -102,7 +102,7 @@ router.post("/setup", jwtMiddleware, async (req, res) => {
       regStart,
       regEnd,
       startTime,
-      electionDuration, // in hours
+      endTime, // in hours
     } = req.body;
 
     // Check for any currently active election
@@ -117,7 +117,7 @@ router.post("/setup", jwtMiddleware, async (req, res) => {
     const regStartDate = new Date(regStart);
     const regEndDate = new Date(regEnd);
     const startDate = new Date(startTime);
-    const endDate = new Date(startDate.getTime() + electionDuration * 60 * 60 * 1000);
+    const endDate = new Date(endTime);
 
     if (regEndDate < regStartDate) {
       return res.status(400).json({ message: "Registration end cannot be before start." });
@@ -135,7 +135,7 @@ router.post("/setup", jwtMiddleware, async (req, res) => {
       regStart: regStartDate,
       regEnd: regEndDate,
       startTime: startDate,
-      endTime: endDate, // computed
+      endTime: endDate, 
       isActive: false,
     });
 
