@@ -213,4 +213,4 @@ router.get("/active", jwtMiddleware, async (req, res) => {
   }
 });
 
-export default router;
+module.exports = router;
