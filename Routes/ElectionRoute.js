@@ -92,9 +92,9 @@
 const express = require("express");
 const router = express.Router();
 const Election = require("../Models/Election");
-const { jwtMiddleware, generateToken } = require("../jwt");
+const { jwtMiddleware } = require("../jwt");
 
-// 🟢 Create or Setup Election
+// 🟢 Setup Election
 router.post("/setup", jwtMiddleware, async (req, res) => {
   try {
     const {
@@ -102,61 +102,71 @@ router.post("/setup", jwtMiddleware, async (req, res) => {
       regStart,
       regEnd,
       startTime,
-      endTime, // in hours
+      electionDuration, // hours
     } = req.body;
 
-    // Check for any currently active election
+    // ✅ Check for any currently active election
     const activeElection = await Election.findOne({ isActive: true });
     if (activeElection) {
-      return res
-        .status(400)
-        .json({ message: "An election is already active. End it first." });
+      return res.status(400).json({
+        message: "An election is already active. End it first.",
+      });
     }
 
-    // Validate date order
+    // ✅ Validate order of dates
     const regStartDate = new Date(regStart);
     const regEndDate = new Date(regEnd);
     const startDate = new Date(startTime);
-    const endDate = new Date(endTime);
 
     if (regEndDate < regStartDate) {
-      return res.status(400).json({ message: "Registration end cannot be before start." });
+      return res
+        .status(400)
+        .json({ message: "Registration end cannot be before start." });
     }
 
     if (startDate < regEndDate) {
       return res.status(400).json({
-        message: "Election start should be after registration period ends.",
+        message: "Election start should be after registration ends.",
       });
     }
 
-    // Create new election
+    // ✅ Create election (endTime auto-calculated in pre-save hook)
     const election = new Election({
       announcement,
       regStart: regStartDate,
       regEnd: regEndDate,
       startTime: startDate,
-      endTime: endDate, 
+      electionDuration,
       isActive: false,
     });
 
     await election.save();
-   return res.status(201).json({ message: "Election setup created.", election });
+    return res.status(201).json({
+      message: "Election setup created successfully.",
+      election,
+    });
   } catch (err) {
     console.error("❌ Error creating election:", err);
-    return res.status(500).json({ message: "Error creating election.", error: err.message });
+    return res.status(500).json({
+      message: "Error creating election.",
+      error: err.message,
+    });
   }
 });
 
+// 🟢 Get all elections
 router.get("/all", async (req, res) => {
-   try{
-     const elections=await Election.find().populate('result.candidate');
-     return res.status(200).json(elections);
-   }catch(err){
-     console.error("❌ Error fetching elections:", err);
-     return res.status(500).json({ message: "Error fetching elections", error: err.message });
-   }
-
-})
+  try {
+    const elections = await Election.find().populate("result.candidate");
+    return res.status(200).json(elections);
+  } catch (err) {
+    console.error("❌ Error fetching elections:", err);
+    return res.status(500).json({
+      message: "Error fetching elections.",
+      error: err.message,
+    });
+  }
+});
 
 // 🟢 Start Election
 router.post("/start", jwtMiddleware, async (req, res) => {
@@ -164,9 +174,10 @@ router.post("/start", jwtMiddleware, async (req, res) => {
     const { id } = req.body;
     const election = await Election.findById(id);
 
-    if (!election) return res.status(404).json({ message: "Election not found" });
+    if (!election)
+      return res.status(404).json({ message: "Election not found" });
 
-    // Deactivate any other active election
+    // deactivate any other active elections
     await Election.updateMany({ isActive: true }, { isActive: false });
 
     election.isActive = true;
