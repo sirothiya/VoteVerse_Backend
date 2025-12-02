@@ -130,20 +130,20 @@ router.put("/electionsetup",jwtMiddleware,async(req,res)=>{
       {new:true}
     )
     if(!admin)return res.status(404).json({message:"Admin not found"})
-    res.status(200).json({message:"Election setup updated",electionSetup:admin.electionSetup})
+    return res.status(200).json({message:"Election setup updated",electionSetup:admin.electionSetup})
   }catch(err){
     console.log("Error in election setup:", err);
-    res.status(500).json({ error: "Internal server error" });
+   return res.status(500).json({ error: "Internal server error" });
   }
 })
 
 router.get("/electionsetup",async(req,res)=>{
   try{
     const admin=await Admin.findOne();
-    res.json(admin.electionSetup)
+   return res.json(admin.electionSetup)
   }catch(err){
     console.log("Error fetching election setup:", err);
-    res.status(500).json({ error: "Internal server error" });
+   return res.status(500).json({ error: "Internal server error" });
   }
 })
 
