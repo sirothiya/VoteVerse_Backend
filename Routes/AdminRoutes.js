@@ -121,6 +121,31 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.put("/electionsetup",jwtMiddleware,async(req,res)=>{
+  try{
+    const adminId=req.user.id
+    const admin=await Admin.findByIdAndUpdate(
+      adminId,
+      {$set:{electionSetup:req.body}},
+      {new:true}
+    )
+    if(!admin)return res.status(404).json({message:"Admin not found"})
+    res.status(200).json({message:"Election setup updated",electionSetup:admin.electionSetup})
+  }catch(err){
+    console.log("Error in election setup:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+})
+
+router.get("/electionsetup",async(req,res)=>{
+  try{
+    const admin=await Admin.findOne();
+    res.json(admin.electionSetup)
+  }catch(err){
+    console.log("Error fetching election setup:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+})
 
 // router.get("/:party", async (req, res) => {
 //   try {
@@ -137,6 +162,28 @@ router.get("/", async (req, res) => {
 //     res.status(500).json({ error: "Internal server error" });
 //   }
 // });
+
+app.post("/announcement", async (req, res) => {
+  try {
+    const { announcement } = req.body;
+
+    if (!announcement) {
+      return res.status(400).json({ message: "Announcement text required" });
+    }
+
+    const admin = await Admin.findById(adminId);
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    admin.announcements.push(announcement);
+    await admin.save();
+
+    res.json({ message: "Announcement added", announcements: admin.announcements });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 router.put("/:id", jwtMiddleware, async (req, res) => {
   try {

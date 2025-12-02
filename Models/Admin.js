@@ -24,6 +24,14 @@ const adminSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  electionSetup: {
+    announcementMessage: { type: String, default: "" },
+    candidateRegStart: { type: Date, default: null },
+    candidateRegEnd: { type: Date, default: null },
+    electionStart: { type: Date, default: null },
+    electionDurationHours: { type: Number, default: null },
+  },
+  
 });
 
 // password hash (optional)
