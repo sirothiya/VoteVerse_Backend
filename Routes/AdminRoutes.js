@@ -163,7 +163,7 @@ router.get("/electionsetup",async(req,res)=>{
 //   }
 // });
 
-app.post("/announcement", async (req, res) => {
+router.post("/announcement", async (req, res) => {
   try {
     const { announcement } = req.body;
 
