@@ -123,7 +123,7 @@ router.get("/", async (req, res) => {
 
 router.put("/electionsetup",jwtMiddleware,async(req,res)=>{
   try{
-    const adminId=req.user.id
+    const adminId=req.adminId;
     const admin=await Admin.findByIdAndUpdate(
       adminId,
       {$set:{electionSetup:req.body}},

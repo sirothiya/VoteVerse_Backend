@@ -8,6 +8,7 @@ const jwtMiddleware = (req, res, next) => {
   try {
     const decode = jwt.verify(token, process.env.JWT_SECRET_KEY);
     req.user = decode;
+    req.adminId = decode.id;
     next();
   } catch (err) {
     res.status(401).json({ error: "Invalid token" });
@@ -15,7 +16,7 @@ const jwtMiddleware = (req, res, next) => {
 };
 
 const generateToken = (user) => {
-  return jwt.sign(user, process.env.JWT_SECRET_KEY, { expiresIn: "1h" });
+  return jwt.sign(user, process.env.JWT_SECRET_KEY, { expiresIn: "5h" });
 };
 
 module.exports = { jwtMiddleware, generateToken };
