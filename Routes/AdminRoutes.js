@@ -165,7 +165,7 @@ router.get("/electionsetup",async(req,res)=>{
 
 router.put("/updateStatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
-     const status=re.body.status
+     const status=req.body.status
      const candidate=await candidate.findOneAndUpdate(
       {rollnumber:req.params.rollNumber},
       {status},
