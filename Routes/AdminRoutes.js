@@ -163,6 +163,21 @@ router.get("/electionsetup",async(req,res)=>{
 //   }
 // });
 
+router.put("/updateStatus/:rollNumber",jwtMiddleware,async(req,res)=>{
+  try{
+     const status=re.body.status
+     const candidate=await candidate.findOneAndUpdate(
+      {rollnumber:req.params.rollNumber},
+      {status},
+      {new:true}
+     )
+     if(!candidate)return res.status(404).json({message:"Candidate not found"})
+      return res.status(200).json({message:"Candidate status updated",candidate})
+  }catch(err){
+          return res.status(500).json({ error: "Internal server error" });
+  }
+})
+
 router.post("/announcement", async (req, res) => {
   try {
     const { announcement } = req.body;

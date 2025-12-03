@@ -31,7 +31,6 @@ const adminSchema = new mongoose.Schema({
     electionStart: { type: Date, default: null },
     electionDurationHours: { type: Number, default: null },
   },
-  
 });
 
 // password hash (optional)
