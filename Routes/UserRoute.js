@@ -30,7 +30,7 @@ router.post("/userSignup", async (req, res) => {
       rollNumber: newUser.rollNumber,
     };
 
-    await User.collection.dropIndex("aadhar_1");
+    // await User.collection.dropIndex("aadhar_1");
 
     const token = generateToken(payload);
     res.status(201).json({ newUser, token });
