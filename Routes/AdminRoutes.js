@@ -153,33 +153,18 @@ router.get("/electionsetup", async (req, res) => {
   }
 });
 
-// router.get("/:party", async (req, res) => {
-//   try {
-//     if (checkAdmin(req.user.id))
-//       return res.status(403).json({ message: "user is not an admin" });
-//     const party = req.params.party;
-//     const candidates = await candidate.find({ party });
-//     if (!candidates) {
-//       return res.status(400).json({ message: "No candidate found" });
-//     }
-//     res.status(200).json(candidates);
-//   } catch (err) {
-//     console.log("Error fetching candidate:", err);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// });
-
 router.put("/updateStatus/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const status = req.body.status;
     const rollNumber = req.params.rollNumber;
-    const candidate = await candidate.findOneAndUpdate(
+    const candi = await candidate.findOneAndUpdate(
       { rollNumber: rollNumber },
       { status: status },
+      { new: true }
     );
-    if (!candidate)
+    if (!candi)
       return res.status(404).json({ message: "Candidate not found" });
-    return res.status(200).json({ success: true, candidate });
+    return res.status(200).json({ success: true, Candidate: candi });
   } catch (err) {
     return res.status(500).json({ error: "Internal server error" });
   }
