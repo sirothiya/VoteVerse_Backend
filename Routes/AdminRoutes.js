@@ -167,7 +167,7 @@ router.put("/updateStatus/:rollNumber",jwtMiddleware,async(req,res)=>{
   try{
      const status=req.body.status
      const candidate=await candidate.findOneAndUpdate(
-      {rollnumber:req.params.rollNumber},
+      {rollNumber:req.params.rollNumber},
       {status},
       {new:true, runValidators:true}
      )
