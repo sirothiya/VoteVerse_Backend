@@ -169,7 +169,7 @@ router.put("/updateStatus/:rollNumber",jwtMiddleware,async(req,res)=>{
      const candidate=await candidate.findOneAndUpdate(
       {rollnumber:req.params.rollNumber},
       {status},
-      {new:true}
+      {new:true, runValidators:true}
      )
      if(!candidate)return res.status(404).json({message:"Candidate not found"})
       return res.status(200).json({success:true ,candidate})
