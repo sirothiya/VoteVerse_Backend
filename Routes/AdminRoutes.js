@@ -5,7 +5,7 @@ const path = require("path");
 
 const candidate = require("../Models/Candidate");
 const User = require("../Models/User");
-const Admin=require("../Models/Admin")
+const Admin = require("../Models/Admin");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
 const checkAdmin = async (userId) => {
@@ -107,7 +107,8 @@ router.post("/adminLogin", async (req, res) => {
 router.get("/", async (req, res) => {
   try {
     const candidates = await Admin.find();
-    if(candidate.length>1)return res.status(400).json({error:"Admin Already Exist"});
+    if (candidate.length > 1)
+      return res.status(400).json({ error: "Admin Already Exist" });
     const data = candidates?.map((c) => ({
       name: c.name,
       email: c.email,
@@ -121,31 +122,36 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.put("/electionsetup",jwtMiddleware,async(req,res)=>{
-  try{
-    const adminId=req.adminId;
-    const admin=await Admin.findByIdAndUpdate(
+router.put("/electionsetup", jwtMiddleware, async (req, res) => {
+  try {
+    const adminId = req.adminId;
+    const admin = await Admin.findByIdAndUpdate(
       adminId,
-      {$set:{electionSetup:req.body}},
-      {new:true}
-    )
-    if(!admin)return res.status(404).json({message:"Admin not found"})
-    return res.status(200).json({message:"Election setup updated",electionSetup:admin.electionSetup})
-  }catch(err){
+      { $set: { electionSetup: req.body } },
+      { new: true }
+    );
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    return res
+      .status(200)
+      .json({
+        message: "Election setup updated",
+        electionSetup: admin.electionSetup,
+      });
+  } catch (err) {
     console.log("Error in election setup:", err);
-   return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
-router.get("/electionsetup",async(req,res)=>{
-  try{
-    const admin=await Admin.findOne();
-   return res.json(admin.electionSetup)
-  }catch(err){
+router.get("/electionsetup", async (req, res) => {
+  try {
+    const admin = await Admin.findOne();
+    return res.json(admin.electionSetup);
+  } catch (err) {
     console.log("Error fetching election setup:", err);
-   return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 // router.get("/:party", async (req, res) => {
 //   try {
@@ -163,20 +169,21 @@ router.get("/electionsetup",async(req,res)=>{
 //   }
 // });
 
-router.put("/updateStatus/:rollNumber",jwtMiddleware,async(req,res)=>{
-  try{
-     const status=req.body.status
-     const candidate=await candidate.findOneAndUpdate(
-      {rollNumber:req.params.rollNumber},
-      {status},
-      {new:true, runValidators:true}
-     )
-     if(!candidate)return res.status(404).json({message:"Candidate not found"})
-      return res.status(200).json({success:true ,candidate})
-  }catch(err){
-          return res.status(500).json({ error: "Internal server error" });
+router.put("/updateStatus/:rollNumber", jwtMiddleware, async (req, res) => {
+  try {
+    const status = req.body.status;
+    const rollNumber = req.params.rollNumber;
+    const candidate = await candidate.findOneAndUpdate(
+      { rollNumber: rollNumber },
+      { status: status },
+    );
+    if (!candidate)
+      return res.status(404).json({ message: "Candidate not found" });
+    return res.status(200).json({ success: true, candidate });
+  } catch (err) {
+    return res.status(500).json({ error: "Internal server error" });
   }
-})
+});
 
 router.post("/announcement", async (req, res) => {
   try {
@@ -192,13 +199,15 @@ router.post("/announcement", async (req, res) => {
     admin.announcements.push(announcement);
     await admin.save();
 
-    res.json({ message: "Announcement added", announcements: admin.announcements });
+    res.json({
+      message: "Announcement added",
+      announcements: admin.announcements,
+    });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 router.put("/:id", jwtMiddleware, async (req, res) => {
   try {
@@ -298,7 +307,7 @@ router.delete("/delete/all", jwtMiddleware, async (req, res) => {
       .json({ message: "All candidates deleted successfully" });
   } catch (err) {
     console.error("Error deleting all candidates:", err);
-   return res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
