@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
 const db = require("./db");
-
+require("./utils/electionScheduler");
 const candidateRoute = require("./Routes/CandidateRoute");
 const userRoute = require("./Routes/UserRoute");
 const geminiRoute = require("./Routes/Gemini");

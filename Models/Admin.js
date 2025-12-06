@@ -30,6 +30,7 @@ const adminSchema = new mongoose.Schema({
     candidateRegEnd: { type: Date, default: null },
     electionStart: { type: Date, default: null },
     electionDurationHours: { type: Number, default: null },
+    electionEnd: { type: Date, default: null },
   },
 });
 
@@ -39,6 +40,19 @@ adminSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 10);
   next();
 });
+// Pre-save hook to auto-calculate electionEnd based on electionStart + electionDurationHours
+adminSchema.pre("save", function (next) {
+  const setup = this.electionSetup;
+
+  if (setup.electionStart && setup.electionDurationHours) {
+    const start = new Date(setup.electionStart);
+    const end = new Date(start.getTime() + setup.electionDurationHours * 60 * 60 * 1000);
+    this.electionSetup.electionEnd = end;
+  }
+
+  next();
+});
+
 
 adminSchema.methods.comparePassword = async function (password) {
   const admin = this;
