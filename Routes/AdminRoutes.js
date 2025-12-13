@@ -128,8 +128,10 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
   try {
     const admin = await Admin.findOne();
     if (!admin) return res.status(404).json({ message: "Admin not found" });
+    console.log("Admin found:", admin);
 
     const election = await Election.findOne({ isActive: true });
+    console.log("Active election found:", election);
 
     if (!election) {
       return res.status(400).json({ message: "No active election" });
@@ -137,11 +139,13 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 
     // 1️⃣ Finalize results
     await calculateFinalResults();
+    console.log("Final results calculated");
 
     // 2️⃣ Close election
     election.isActive = false;
     election.status = "COMPLETED";
     await election.save();
+    console.log("Election closed");
 
     // 3️⃣ Reset admin election setup
     admin.electionSetup = {
@@ -150,15 +154,18 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
       candidateRegEnd: null,
       electionStart: null,
       electionEnd: null,
+      electionDurationHours: null,
     };
     admin.electionLocked = false;
     await admin.save();
-
+    console.log("Admin election setup reset");
     // 4️⃣ Reset users voting flag
     await User.updateMany({}, { isVoted: false });
+    console.log("User voting flags reset");
 
     // 5️⃣ Reset candidates (optional)
     await candidate.updateMany({}, { voteCount: 0, votes: [] });
+    console.log("Candidates reset");
 
     return res.json({
       success: true,
