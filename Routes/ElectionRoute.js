@@ -37,12 +37,14 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 
     const now = new Date();
     if (
-      !election.isActive ||
-      now < election.startTime ||
-      now > election.endTime
-    ) {
-      return res.status(400).json({ message: "Election is not active" });
-    }
+  !election.startTime ||
+  !election.endTime ||
+  now < election.startTime ||
+  now > election.endTime
+) {
+  return res.status(400).json({ message: "Election is not active" });
+}
+
 
     // ----------------------------------------
     // 3. Validate Candidate
