@@ -1,0 +1,37 @@
+Planning of the backend :-
+
+Votting application functionality
+
+1.user signup /login
+2.user will be able to see the list of candidates
+3.user will be able to elect the candidate
+4.Live result declaration
+5. user data must contain 1 unique government id proof
+6.there should be 1 admin who can only maintain the CRUD in candidate
+7.user can be able to change password
+8.login with aadhar and passport
+9. Admin will not be able to cast the vote 
+
+-------------------------------------------
+
+Routes
+
+user Authentication
+/signup:POST create a new user account that not exists
+/login :POST log in to an existing account.
+
+voting 
+/candidates :GET get the list of candidates
+/vote/:candidateID :POST vote for a candidate
+
+vote count
+/vote/count :GET the list of candidates sorted by their vote counts
+
+user profile 
+/profile :GET get the user's profile information
+/profile/password :PUT change the user's password
+
+Admin candidate Management
+/candidate: POST create a new candidate
+/candidates/:candidateId: PUT update an existing candidate
+/candidates/:candidateId: DELETE a candidate from the list
