@@ -2,65 +2,73 @@ const cron = require("node-cron");
 const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
-const calculateFinalResults = require("./calculateFinalResults");
 
 cron.schedule("* * * * *", async () => {
   try {
     const admin = await Admin.findOne();
     if (!admin || !admin.electionSetup) return;
 
-    const { candidateRegStart, candidateRegEnd, electionStart, electionEnd } =
-      admin.electionSetup;
+    const { electionStart, electionEnd } = admin.electionSetup;
+    if (!electionStart || !electionEnd) return;
 
     const now = new Date();
-    console.log ("election end time:", electionEnd);
 
-    // — REGISTRATION WINDOW —
-    if (candidateRegStart && now >= candidateRegStart && now < candidateRegEnd) {
-      console.log("Candidate Registration Active");
-    }
+    // Find active election
+    const election = await Election.findOne({ isActive: true });
+    if (!election) return;
 
-    // — AUTO START ELECTION —
-    if (electionStart && now >= electionStart && now < electionEnd) {
-      let election = await Election.findOne({ isActive: true });
+    // ⛔ If already processed, do nothing
+    if (election.resultsDeclared) return;
 
-      if (!election) {
-        await Election.create({
-          isActive: true,
-          startTime: electionStart,
-          endTime: electionEnd,
+    // ✅ Election ended
+    if (now >= new Date(electionEnd)) {
+      console.log("🛑 Election ended. Calculating results...");
+
+      // Fetch candidates
+      const candidates = await Candidate.find();
+
+      const groupedResults = {};
+
+      for (const c of candidates) {
+        if (!groupedResults[c.position]) {
+          groupedResults[c.position] = [];
+        }
+
+        groupedResults[c.position].push({
+          candidateId: c._id,
+          name: c.name,
+          votes: c.votes,
         });
-        console.log("Election Started Automatically ✔");
       }
-    }
 
-    // — AUTO END ELECTION —
-    if (electionEnd && now >= electionEnd) {
-      let election = await Election.findOne({ isActive: true });
+      // Sort winners
+      const finalResults = [];
 
-      if (election) {
-        election.isActive = false;
-        await election.save();
+      for (const position in groupedResults) {
+        const sorted = groupedResults[position].sort(
+          (a, b) => b.votes - a.votes
+        );
 
-        const finalResults =await calculateFinalResults();
-
-        // Reset setup so next election can be created
-        admin.electionSetup = {
-          announcementMessage: admin.electionSetup.announcementMessage,
-          candidateRegStart: null,
-          candidateRegEnd: null,
-          electionStart: null,
-          electionDurationHours: null,
-          electionEnd: null,
-        };
-
-        admin.electionLocked = false; // Unlock for next election
-        await admin.save();
-
-        console.log("Election Ended Automatically ✔");
+        finalResults.push({
+          position,
+          candidates: sorted,
+          winner: sorted[0] || null,
+        });
       }
+
+      // Save results permanently
+      election.result = finalResults;
+      election.isActive = false;
+      election.resultsDeclared = true;
+      election.endedAt = now;
+
+      await election.save();
+
+      console.log("🏆 Election results saved successfully");
     }
   } catch (err) {
-    console.log("Scheduler error:", err);
+    console.error("❌ Election Cron Error:", err.message);
   }
 });
+
+module.exports = {};
