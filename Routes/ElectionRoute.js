@@ -149,5 +149,12 @@ router.get("/vote/count", async (req, res) => {
   }
 });
 
+router.get("/election/history", async (req, res) => {
+  const elections = await Election.find({ status: "COMPLETED" })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  res.json(elections);
+});
 
 module.exports = router;

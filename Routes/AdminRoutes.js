@@ -123,47 +123,52 @@ router.get("/", async (req, res) => {
   }
 });
 
-// router.put("/electionsetup", jwtMiddleware, async (req, res) => {
-//   try {
-//     const adminId = req.adminId;
-//     const setupData = req.body;
-//     console.log("Received election setup data:", setupData);
-//     console.log("Admin ID from token:", adminId);
-//     let endTime = null;
-//     if (setupData.electionStart && setupData.electionDurationHours) {
-//       const start = new Date(setupData.electionStart);
-//       endTime = new Date(
-//         start.getTime() + setupData.electionDurationHours * 3600000
-//       );
-//     }
-//     setupData.electionEnd = endTime;
-//     const admin = await Admin.findByIdAndUpdate(
-//       adminId,
-//       { $set: { electionSetup: setupData } },
-//       { new: true }
-//     );
-//     if (!admin) return res.status(404).json({ message: "Admin not found" });
-//     let election = await Election.findOne(); // assuming only ONE election exists
-//     if (!election) {
-//       // Create new election
-//       election = new Election({
-//         isActive: false,
-//         startTime: setupData.electionStart || null,
-//         endTime: endTime,
-//         // later results will be added when votes happen
-//       });
-//       await election.save();
-//     }
-//     return res.status(200).json({
-//       message: "Election setup updated",
-//       electionSetup: admin.electionSetup,
-//     });
-//   } catch (err) {
-//     console.log("Error in election setup:", err);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// });
 
+router.post("/election/reset", jwtMiddleware, async (req, res) => {
+  try {
+    const admin = await Admin.findOne();
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    const election = await Election.findOne({ isActive: true });
+
+    if (!election) {
+      return res.status(400).json({ message: "No active election" });
+    }
+
+    // 1️⃣ Finalize results
+    await calculateFinalResults();
+
+    // 2️⃣ Close election
+    election.isActive = false;
+    election.status = "COMPLETED";
+    await election.save();
+
+    // 3️⃣ Reset admin election setup
+    admin.electionSetup = {
+      announcementMessage: [],
+      candidateRegStart: null,
+      candidateRegEnd: null,
+      electionStart: null,
+      electionEnd: null,
+    };
+    admin.electionLocked = false;
+    await admin.save();
+
+    // 4️⃣ Reset users voting flag
+    await User.updateMany({}, { isVoted: false });
+
+    // 5️⃣ Reset candidates (optional)
+    await candidate.updateMany({}, { voteCount: 0, votes: [] });
+
+    return res.json({
+      success: true,
+      message: "Election reset successfully",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 router.put("/electionsetup", jwtMiddleware, async (req, res) => {
   try {
