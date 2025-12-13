@@ -157,4 +157,5 @@ router.get("/election/history", async (req, res) => {
   res.json(elections);
 });
 
+
 module.exports = router;
