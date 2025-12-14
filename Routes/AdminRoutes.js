@@ -127,28 +127,27 @@ router.get("/", async (req, res) => {
 
 router.post("/election/reset", jwtMiddleware, async (req, res) => {
   try {
+    // 1️⃣ Fetch admin
     const admin = await Admin.findOne();
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
-    console.log("Admin found:", admin);
-
-    const election = await Election.findOne({ isActive: true });
-    console.log("Active election found:", election);
-
-    if (!election) {
-      return res.status(400).json({ message: "No active election" });
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
     }
 
-    // 1️⃣ Finalize results
-    await calculateFinalResults();
-    console.log("Final results calculated");
+    // 2️⃣ Fetch active election
+    const election = await Election.findOne({ isActive: true });
+    if (!election) {
+      return res.status(400).json({ message: "No active election found" });
+    }
 
-    // 2️⃣ Close election
+    // 3️⃣ Finalize election results
+    await calculateFinalResults();
+
+    // 4️⃣ Close election
     election.isActive = false;
     election.status = "COMPLETED";
     await election.save();
-    console.log("Election closed");
 
-    // 3️⃣ Reset admin election setup
+    // 5️⃣ Reset admin election configuration
     admin.electionSetup = {
       announcementMessage: [],
       candidateRegStart: null,
@@ -159,21 +158,17 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     };
     admin.electionLocked = false;
     await admin.save();
-    console.log("Admin election setup reset");
-    // 4️⃣ Reset users voting flag
+
     await User.updateMany({}, { isVoted: false });
-    console.log("User voting flags reset");
 
-    // 5️⃣ Reset candidates (optional)
-    await candidate.updateMany({}, { voteCount: 0, votes: [] });
-    console.log("Candidates reset");
-
+    await candidate.deleteMany({});
+    
     return res.json({
       success: true,
-      message: "Election reset successfully",
+      message: "Election reset successfully. Candidates cleared for next election.",
     });
   } catch (err) {
-    console.error(err);
+    console.error("Election reset error:", err);
     res.status(500).json({ message: "Server error" });
   }
 });
