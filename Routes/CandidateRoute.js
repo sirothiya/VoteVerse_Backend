@@ -189,6 +189,80 @@ router.get(
   }
 );
 
+router.post(
+  "/complete-profile/:rollNumber",
+  jwtMiddleware,
+  upload.fields([
+    { name: "manifesto", maxCount: 1 },
+    { name: "campaignVideo", maxCount: 1 },
+    { name: "profilePhoto", maxCount: 1 },
+    { name: "parentalConsent", maxCount: 1 },
+    { name: "partysymbol", maxCount: 1 },
+  ]),
+  async (req, res) => {
+    try {
+      const { rollNumber } = req.params;
+
+      const candidate = await Candidate.findOne({ rollNumber });
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      // 🚫 Prevent resubmission once completed (optional)
+      if (candidate.profilecompleted) {
+        return res.status(400).json({
+          message: "Profile already completed",
+        });
+      }
+
+      /* ================= FILE UPDATES ================= */
+      if (req.files?.manifesto)
+        candidate.manifesto = req.files.manifesto[0].path;
+
+      if (req.files?.campaignVideo)
+        candidate.campaignVideo = req.files.campaignVideo[0].path;
+
+      if (req.files?.profilePhoto)
+        candidate.profilePhoto = req.files.profilePhoto[0].path;
+
+      if (req.files?.parentalConsent)
+        candidate.parentalConsent = req.files.parentalConsent[0].path;
+
+      if (req.files?.partysymbol)
+        candidate.partysymbol = req.files.partysymbol[0].path;
+
+      /* ================= TEXT DATA ================= */
+      candidate.achievements = req.body.achievements
+        ? JSON.parse(req.body.achievements)
+        : [];
+
+      candidate.initiatives = req.body.initiatives
+        ? JSON.parse(req.body.initiatives)
+        : [];
+
+      candidate.declarationSigned =
+        req.body.declarationSigned === "true" ||
+        req.body.declarationSigned === true;
+
+      candidate.profilecompleted = true;
+
+      await candidate.save();
+
+      return res.status(200).json({
+        message: "Candidate profile completed successfully",
+        updatedCandidate: candidate,
+      });
+    } catch (err) {
+      console.error("Error completing profile:", err);
+      return res.status(500).json({
+        message: "Error completing profile",
+        error: err.message,
+      });
+    }
+  }
+);
+
+
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
@@ -203,7 +277,12 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
         message: `Candidate with roll number ${rollNumber} not found.`,
       });
     }
-
+    if(candidate.status==="Approved"){
+      return res.status(400).json({
+        success: false,
+        message: `Approved candidates cannot be deleted.`,
+      });
+    }
     // 🗑️ Delete uploaded files safely
     const filesToDelete = [
       candidate.profilePhoto,
