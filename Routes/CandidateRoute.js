@@ -40,16 +40,35 @@ const upload = multer({ storage });
 router.post("/candidateSignup", async (req, res) => {
   try {
     const data = req.body;
+
+    // ✅ Validate class safely
+    const classMatch = data.class?.match(/\d+/);
+    if (!classMatch) {
+      return res.status(400).json({
+        error: "Invalid class format",
+      });
+    }
+
+    const classNum = parseInt(classMatch[0]);
+    if (classNum < 10) {
+      return res.status(400).json({
+        error: "Classes below 10 are not allowed to be a candidate",
+      });
+    }
+
+    // ✅ Check rollNumber + class uniqueness
     const existingCandidate = await Candidate.findOne({
       rollNumber: data.rollNumber,
       class: data.class,
     });
-    if (existingCandidate)
-      return res
-        .status(400)
-        .json({
-          error: "Candidate with this rollnumber and class already registered",
-        });
+
+    if (existingCandidate) {
+      return res.status(400).json({
+        error: "Candidate with this roll number already registered in this class",
+      });
+    }
+
+    // ✅ Create candidate
     const newCandidate = new Candidate({
       name: data.name,
       rollNumber: data.rollNumber,
@@ -58,26 +77,22 @@ router.post("/candidateSignup", async (req, res) => {
       dob: data.dob,
       gender: data.gender,
       position: data.position,
-      password: data.password,
     });
-    console.log("check1");
-    let num = parseInt(data.class.match(/\d+/)[0]);
-    if (num < 10)
-      return res.status(400).json({
-        error: "Classes below 10 are not allowed to be a candidate",
-      });
-    console.log("check2");
+
     const savedCandidate = await newCandidate.save();
-    console.log("check3");
+
     const payload = {
-      id: savedCandidate.id,
+      id: savedCandidate._id,
       rollNumber: savedCandidate.rollNumber,
     };
-    await Candidate.collection.dropIndex("aadhar_1");
-    console.log("check4");
+
     const token = generateToken(payload);
-    console.log("check5");
-    return res.status(200).json({ savedCandidate, token });
+
+    return res.status(201).json({
+      message: "Candidate registered successfully",
+      savedCandidate,
+      token,
+    });
   } catch (err) {
     console.error("Error adding candidate:", err);
     res.status(500).json({ error: "Internal server error" });
