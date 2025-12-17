@@ -124,7 +124,6 @@ router.get("/", async (req, res) => {
   }
 });
 
-
 router.post("/election/reset", jwtMiddleware, async (req, res) => {
   try {
     // 1️⃣ Fetch admin
@@ -135,10 +134,7 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 
     // 2️⃣ Fetch active election
     const election = await Election.findOne({ isActive: true });
-    if (!election) {
-      return res.status(400).json({ message: "No active election found" });
-    }
-
+  
     // 3️⃣ Finalize election results
     await calculateFinalResults();
 
