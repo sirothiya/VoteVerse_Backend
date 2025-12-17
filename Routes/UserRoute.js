@@ -5,40 +5,84 @@ const User = require("../Models/User");
 const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
+// router.post("/userSignup", async (req, res) => {
+//   try {
+//     const data = req.body;
+//     console.log("Signup Data:", data);
+//     let num = parseInt(data.class.match(/\d+/)[0]);
+//     if (num < 6)
+//       return res
+//         .status(400)
+//         .json({
+//           error: "Classes below 6 are not allowed to particiapte in election",
+//         });
+
+//     const existingUser = await User.findOne({ rollNumber: data.rollNumber });
+//     if (existingUser)
+//       return res
+//         .status(400)
+//         .json({ error: "User with this rollnumber already registered" });
+//     const user = new User(data);
+//     const newUser = await user.save();
+//     console.log("User created successfully");
+//     const payload = {
+//       id: newUser.id,
+//       rollNumber: newUser.rollNumber,
+//     };
+
+//     // await User.collection.dropIndex("aadhar_1");
+
+//     const token = generateToken(payload);
+//     res.status(201).json({ newUser, token });
+//   } catch (err) {
+//     console.error("Error creating user:", err);
+//     res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
 router.post("/userSignup", async (req, res) => {
   try {
     const data = req.body;
     console.log("Signup Data:", data);
-    let num = parseInt(data.class.match(/\d+/)[0]);
-    if (num < 6)
-      return res
-        .status(400)
-        .json({
-          error: "Classes below 6 are not allowed to particiapte in election",
-        });
 
-    const existingUser = await User.findOne({ rollNumber: data.rollNumber });
-    if (existingUser)
-      return res
-        .status(400)
-        .json({ error: "User with this rollnumber already registered" });
+    // Extract numeric class value (e.g., "Class 8" → 8)
+    const classNum = parseInt(data.class.match(/\d+/)?.[0]);
+    if (isNaN(classNum) || classNum < 6) {
+      return res.status(400).json({
+        error: "Classes below 6 are not allowed to participate in election",
+      });
+    }
+
+    // ✅ Check rollNumber + class combination
+    const existingUser = await User.findOne({
+      rollNumber: data.rollNumber,
+      class: data.class,
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        error: "User with this roll number already registered in this class",
+      });
+    }
+
     const user = new User(data);
     const newUser = await user.save();
-    console.log("User created successfully");
+
     const payload = {
-      id: newUser.id,
+      id: newUser._id,
       rollNumber: newUser.rollNumber,
     };
 
-    // await User.collection.dropIndex("aadhar_1");
-
     const token = generateToken(payload);
+
     res.status(201).json({ newUser, token });
   } catch (err) {
     console.error("Error creating user:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
 router.post("/userLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;

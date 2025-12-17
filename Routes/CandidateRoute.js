@@ -40,6 +40,16 @@ const upload = multer({ storage });
 router.post("/candidateSignup", async (req, res) => {
   try {
     const data = req.body;
+    const existingCandidate = await Candidate.findOne({
+      rollNumber: data.rollNumber,
+      class: data.class,
+    });
+    if (existingCandidate)
+      return res
+        .status(400)
+        .json({
+          error: "Candidate with this rollnumber and class already registered",
+        });
     const newCandidate = new Candidate({
       name: data.name,
       rollNumber: data.rollNumber,
@@ -154,8 +164,7 @@ router.get(
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
-       return res.status(200).json({status:candidate.status})
-      
+      return res.status(200).json({ status: candidate.status });
     } catch (err) {
       console.error("Error checking profile:", err);
       res
