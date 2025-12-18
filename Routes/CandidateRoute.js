@@ -64,7 +64,8 @@ router.post("/candidateSignup", async (req, res) => {
 
     if (existingCandidate) {
       return res.status(400).json({
-        error: "Candidate with this roll number already registered in this class",
+        error:
+          "Candidate with this roll number already registered in this class",
       });
     }
 
@@ -208,30 +209,29 @@ router.post(
         return res.status(404).json({ message: "Candidate not found" });
       }
 
-      // 🚫 Prevent resubmission once completed (optional)
+      
       if (candidate.profilecompleted) {
         return res.status(400).json({
           message: "Profile already completed",
         });
       }
 
-      /* ================= FILE UPDATES ================= */
-      if (req.files?.manifesto)
-        candidate.manifesto = req.files.manifesto[0].path;
-
+     
       if (req.files?.campaignVideo)
-        candidate.campaignVideo = req.files.campaignVideo[0].path;
+        candidate.campaignVideo = `/uploads/videos/${req.files.campaignVideo[0].filename}`;
 
       if (req.files?.profilePhoto)
-        candidate.profilePhoto = req.files.profilePhoto[0].path;
+        candidate.profilePhoto = `/uploads/photos/${req.files.profilePhoto[0].filename}`;
 
       if (req.files?.parentalConsent)
-        candidate.parentalConsent = req.files.parentalConsent[0].path;
+        candidate.parentalConsent = `/uploads/consents/${req.files.parentalConsent[0].filename}`;
 
       if (req.files?.partysymbol)
-        candidate.partysymbol = req.files.partysymbol[0].path;
+        candidate.partysymbol = `/uploads/others/${req.files.partysymbol[0].filename}`;
 
-      /* ================= TEXT DATA ================= */
+      if (req.files?.manifesto)
+        candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`; 
+      
       candidate.achievements = req.body.achievements
         ? JSON.parse(req.body.achievements)
         : [];
@@ -262,7 +262,6 @@ router.post(
   }
 );
 
-
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
@@ -277,7 +276,7 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
         message: `Candidate with roll number ${rollNumber} not found.`,
       });
     }
-    if(candidate.status==="Approved"){
+    if (candidate.status === "Approved") {
       return res.status(400).json({
         success: false,
         message: `Approved candidates cannot be deleted.`,
