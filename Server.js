@@ -29,7 +29,7 @@ app.use("/user", userRoute);
 app.use("/gemini", geminiRoute);
 app.use("/admin",AdminRoute)
 app.use("/election",ElectionRoute)
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 
 
 app.get("/", (req, res) => {
