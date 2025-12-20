@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const path = require('path');
 // Allow specific frontend (during development)
+app.options("/*", cors());
 app.use(
   cors({
     origin: "http://localhost:5173", // your frontend URL
@@ -13,7 +14,7 @@ app.use(
     credentials: true,
   })
 );
-// app.options("/*", cors());
+
 app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
 
