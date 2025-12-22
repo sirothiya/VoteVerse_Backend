@@ -70,6 +70,7 @@ cron.schedule("* * * * *", async () => {
       admin.electionSetup.electionDurationHours = null;
       admin.electionSetup.candidateRegStart = null;
       admin.electionSetup.candidateRegEnd = null;
+      admin.electionSetup.announcementMessage = [];
       admin.electionSetup.announcementMessage = ["Election completed. Please check results."];
       await admin.save();
    

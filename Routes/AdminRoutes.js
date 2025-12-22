@@ -148,7 +148,6 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
         ret;
       }
     }
-
     // 5️⃣ Reset admin election configuration
     admin.electionSetup = {
       announcementMessage: [],
