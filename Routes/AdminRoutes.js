@@ -134,22 +134,20 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 
     // 2️⃣ Fetch active election
     const election = await Election.findOne({ isActive: true });
-  
+
     // 3️⃣ Finalize election results
-    if(election){
-      try{
+    if (election) {
+      try {
         await calculateFinalResults();
-      }
-      catch(err){
+        // 4️⃣ Close election
+        election.isActive = false;
+        election.status = "COMPLETED";
+        await election.save();
+      } catch (err) {
         console.error("Error calculating final results during reset:", err);
-        return res.status(500).json({ message: "Error calculating final results" });
+        ret;
       }
     }
-    
-    // 4️⃣ Close election
-    election.isActive = false;
-    election.status = "COMPLETED";
-    await election.save();
 
     // 5️⃣ Reset admin election configuration
     admin.electionSetup = {
@@ -166,10 +164,11 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     await User.updateMany({}, { isVoted: false });
 
     await candidate.deleteMany({});
-    
+
     return res.json({
       success: true,
-      message: "Election reset successfully. Candidates cleared for next election.",
+      message:
+        "Election reset successfully. Candidates cleared for next election.",
     });
   } catch (err) {
     console.error("Election reset error:", err);
@@ -195,7 +194,9 @@ router.put("/electionsetup", jwtMiddleware, async (req, res) => {
     let endTime = null;
     if (setupData.electionStart && setupData.electionDurationHours) {
       const start = new Date(setupData.electionStart);
-      endTime = new Date(start.getTime() + setupData.electionDurationHours * 3600000);
+      endTime = new Date(
+        start.getTime() + setupData.electionDurationHours * 3600000
+      );
     }
 
     setupData.electionEnd = endTime;
