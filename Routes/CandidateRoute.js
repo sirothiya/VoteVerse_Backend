@@ -28,8 +28,8 @@ const storage = multer.diskStorage({
     else if (file.fieldname === "campaignVideo") folder = "uploads/videos";
     else if (file.fieldname === "profilePhoto") folder = "uploads/photos";
     else if (file.fieldname === "parentalConsent") folder = "uploads/consents";
-    // cb(null, path.join(__dirname, "..", folder));
-    cb(bull,folder)
+    cb(null, path.join(__dirname, "..", folder));
+    // cb(bull,folder)
   },
   filename: function (req, file, cb) {
     cb(null, Date.now() + path.extname(file.originalname));
