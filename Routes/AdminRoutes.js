@@ -136,8 +136,16 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     const election = await Election.findOne({ isActive: true });
   
     // 3️⃣ Finalize election results
-    await calculateFinalResults();
-
+    if(election){
+      try{
+        await calculateFinalResults();
+      }
+      catch(err){
+        console.error("Error calculating final results during reset:", err);
+        return res.status(500).json({ message: "Error calculating final results" });
+      }
+    }
+    
     // 4️⃣ Close election
     election.isActive = false;
     election.status = "COMPLETED";
