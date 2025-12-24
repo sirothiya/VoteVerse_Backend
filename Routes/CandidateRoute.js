@@ -113,7 +113,7 @@ router.post("/candidateLogin", async (req, res) => {
         .json({ error: "candidate not found, please signup" });
     }
     if (!can || !(await can.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid aadhar or password" });
+      return res.status(401).json({ error: "Invalid rollnumber or password" });
     }
     console.log("111");
     const payload = {
