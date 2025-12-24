@@ -14,8 +14,11 @@ cron.schedule("* * * * *", async () => {
     const now = new Date();
 
     // Find active election
-    const election = await Election.findOne({ isActive: true });
-    if (!election) return;
+    // const election = await Election.findOne({ isActive: true });
+    // if (!election) return;
+
+    const election = await Election.findOne().sort({ createdAt: -1 });
+    if (!election || election.resultsDeclared) return;
 
     // ⛔ If already processed, do nothing
     if (election.resultsDeclared) return;
@@ -64,17 +67,16 @@ cron.schedule("* * * * *", async () => {
 
       await election.save();
 
-      const admin=await Admin.findOne();
+      const admin = await Admin.findOne();
       admin.electionSetup.electionEnd = null;
       admin.electionSetup.electionStart = null;
       admin.electionSetup.electionDurationHours = null;
       admin.electionSetup.candidateRegStart = null;
       admin.electionSetup.candidateRegEnd = null;
-      admin.electionSetup.announcementMessage = [];
-      admin.electionSetup.announcementMessage = ["Election completed. Please check results."];
+      admin.electionSetup.announcementMessage = [
+        "Election completed. Please check results.",
+      ];
       await admin.save();
-   
-
 
       console.log("🏆 Election results saved successfully");
     }
