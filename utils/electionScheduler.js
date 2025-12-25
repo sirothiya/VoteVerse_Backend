@@ -13,10 +13,6 @@ cron.schedule("* * * * *", async () => {
 
     const now = new Date();
 
-    // Find active election
-    // const election = await Election.findOne({ isActive: true });
-    // if (!election) return;
-
     const election = await Election.findOne().sort({ createdAt: -1 });
     if (!election || election.resultsDeclared) return;
 
@@ -25,7 +21,6 @@ cron.schedule("* * * * *", async () => {
     if (now >= new Date(electionEnd)) {
       console.log("🛑 Election ended. Calculating results...");
 
-      // Fetch candidates
       const candidates = await Candidate.find();
 
       console.log(`🔍 Found ${candidates.length} candidates.`);
@@ -43,8 +38,6 @@ cron.schedule("* * * * *", async () => {
           votes: c.votes,
         });
       }
-      
-
       // Sort winners
       const finalResults = [];
 
@@ -60,25 +53,37 @@ cron.schedule("* * * * *", async () => {
         });
       }
 
-      // Save results permanently
       console.log("💾 Saving election results...");
-      election.result = finalResults;
-      election.isActive = false;
-      election.resultsDeclared = true;
-      election.endedAt = now;
+      const updatedElection = await Election.findOneAndUpdate(
+        {
+          _id: election._id,
+          resultsDeclared: false, // prevents race condition
+        },
+        {
+          $set: {
+            result: finalResults,
+            isActive: false,
+            resultsDeclared: true,
+            endedAt: now,
+          },
+        },
+        { new: true }
+      );
 
-      await election.save();
-
-      const admin = await Admin.findOne();
+      if (!updatedElection) {
+        console.log("⚠️ Election already processed by another cron run");
+        return;
+      }
       console.log("🎉 Election results:", admin);
-      admin.electionSetup.electionEnd = null;
-      admin.electionSetup.electionStart = null;
-      admin.electionSetup.electionDurationHours = null;
-      admin.electionSetup.candidateRegStart = null;
-      admin.electionSetup.candidateRegEnd = null;
-      admin.electionSetup.announcementMessage = [
-        "Election completed. Please check results.",
-      ];
+      admin.electionSetup = {
+        electionStart: null,
+        electionEnd: null,
+        electionDurationHours: null,
+        candidateRegStart: null,
+        candidateRegEnd: null,
+        announcementMessage: ["Election completed. Please check results."],
+      };
+
       await admin.save();
 
       console.log("🏆 Election results saved successfully");
