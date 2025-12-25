@@ -20,15 +20,15 @@ cron.schedule("* * * * *", async () => {
     const election = await Election.findOne().sort({ createdAt: -1 });
     if (!election || election.resultsDeclared) return;
 
-    // ⛔ If already processed, do nothing
     if (election.resultsDeclared) return;
 
-    // ✅ Election ended
     if (now >= new Date(electionEnd)) {
       console.log("🛑 Election ended. Calculating results...");
 
       // Fetch candidates
       const candidates = await Candidate.find();
+
+      console.log(`🔍 Found ${candidates.length} candidates.`);
 
       const groupedResults = {};
 
@@ -43,6 +43,7 @@ cron.schedule("* * * * *", async () => {
           votes: c.votes,
         });
       }
+      
 
       // Sort winners
       const finalResults = [];
@@ -60,6 +61,7 @@ cron.schedule("* * * * *", async () => {
       }
 
       // Save results permanently
+      console.log("💾 Saving election results...");
       election.result = finalResults;
       election.isActive = false;
       election.resultsDeclared = true;
@@ -68,6 +70,7 @@ cron.schedule("* * * * *", async () => {
       await election.save();
 
       const admin = await Admin.findOne();
+      console.log("🎉 Election results:", admin);
       admin.electionSetup.electionEnd = null;
       admin.electionSetup.electionStart = null;
       admin.electionSetup.electionDurationHours = null;
