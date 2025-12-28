@@ -1,73 +1,55 @@
 const cron = require("node-cron");
+const mongoose = require("mongoose");
 const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
 
-// Startup log (helps detect multiple instances on Render)
-console.log("🚀 Election cron service started | PID:", process.pid);
+console.log("🚀 Election cron started | PID:", process.pid);
 
 cron.schedule("* * * * *", async () => {
-  const runId = `${process.pid}-${Date.now()}`;
+  const session = await mongoose.startSession();
 
   try {
-    console.log(`⏱️ [${runId}] Cron tick started`);
+    session.startTransaction();
 
-    // 1️⃣ Fetch admin & election config
-    const admin = await Admin.findOne().lean();
-    if (!admin?.electionSetup) {
-      console.log(`ℹ️ [${runId}] No election setup found`);
-      return;
-    }
-
-    const { electionStart, electionEnd } = admin.electionSetup;
-    if (!electionStart || !electionEnd) {
-      console.log(`ℹ️ [${runId}] Election dates not configured`);
+    const admin = await Admin.findOne().session(session);
+    if (!admin?.electionSetup?.electionEnd) {
+      await session.abortTransaction();
       return;
     }
 
     const now = new Date();
-    if (now < new Date(electionEnd)) {
-      // Election still running
+    if (now < new Date(admin.electionSetup.electionEnd)) {
+      await session.abortTransaction();
       return;
     }
 
-    // 2️⃣ Get latest election (not yet declared)
     const election = await Election.findOne({
       resultsDeclared: false,
-    }).sort({ createdAt: -1 });
+    })
+      .sort({ createdAt: -1 })
+      .session(session);
 
     if (!election) {
-      console.log(`ℹ️ [${runId}] No pending election to process`);
+      await session.abortTransaction();
       return;
     }
 
-    console.log(`🛑 [${runId}] Election ended. Calculating results...`);
+    console.log("🛑 Election ended. Calculating results...");
 
-    // 3️⃣ Fetch candidates
-    const candidates = await Candidate.find().lean();
-    console.log(`🔍 [${runId}] Found ${candidates.length} candidates`);
+    const candidates = await Candidate.find().session(session);
 
-    if (!candidates.length) {
-      console.warn(`⚠️ [${runId}] No candidates found`);
-      return;
-    }
-
-    // 4️⃣ Group & sort candidates by position
-    const groupedResults = {};
-
+    const grouped = {};
     for (const c of candidates) {
-      if (!groupedResults[c.position]) {
-        groupedResults[c.position] = [];
-      }
-
-      groupedResults[c.position].push({
+      if (!grouped[c.position]) grouped[c.position] = [];
+      grouped[c.position].push({
         candidateId: c._id,
         name: c.name,
         votes: c.votes || 0,
       });
     }
 
-    const finalResults = Object.entries(groupedResults).map(
+    const finalResults = Object.entries(grouped).map(
       ([position, list]) => {
         const sorted = list.sort((a, b) => b.votes - a.votes);
         return {
@@ -78,52 +60,34 @@ cron.schedule("* * * * *", async () => {
       }
     );
 
-    // 5️⃣ Atomic update (prevents race condition)
-    const updatedElection = await Election.findOneAndUpdate(
-      {
-        _id: election._id,
-        resultsDeclared: false, // 🔐 atomic lock
-      },
-      {
-        $set: {
-          result: finalResults,
-          isActive: false,
-          resultsDeclared: true,
-          endedAt: now,
-        },
-      },
-      { new: true }
-    );
+    // 🔐 Election update
+    election.result = finalResults;
+    election.resultsDeclared = true;
+    election.isActive = false;
+    election.endedAt = now;
+    await election.save({ session });
 
-    if (!updatedElection) {
-      console.log(
-        `⚠️ [${runId}] Election already processed by another instance`
-      );
-      return;
-    }
+    // 🔐 Admin update (SAME TRANSACTION)
+    admin.electionSetup = {
+      electionStart: null,
+      electionEnd: null,
+      electionDurationHours: null,
+      candidateRegStart: null,
+      candidateRegEnd: null,
+      announcementMessage: [
+        "Election completed. Please check results.",
+      ],
+    };
+    await admin.save({ session });
 
-    console.log(`🎉 [${runId}] Election results saved successfully`);
+    await session.commitTransaction();
 
-    // 6️⃣ Reset admin election config
-    await Admin.updateOne(
-      { _id: admin._id },
-      {
-        $set: {
-          "electionSetup.electionStart": null,
-          "electionSetup.electionEnd": null,
-          "electionSetup.electionDurationHours": null,
-          "electionSetup.candidateRegStart": null,
-          "electionSetup.candidateRegEnd": null,
-          "electionSetup.announcementMessage": [
-            "Election completed. Please check results.",
-          ],
-        },
-      }
-    );
-
-    console.log(`🏆 [${runId}] Admin election setup reset`);
+    console.log("🎉 Election + Announcement updated atomically");
   } catch (err) {
-    console.error(`❌ [${runId}] Election cron error:`, err);
+    await session.abortTransaction();
+    console.error("❌ Cron error:", err);
+  } finally {
+    session.endSession();
   }
 });
 
