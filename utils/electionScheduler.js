@@ -4,39 +4,66 @@ const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
 
-console.log("🚀 Election cron started | PID:", process.pid);
+console.log("🚀 Election scheduler running | PID:", process.pid);
 
+/**
+ * Runs every minute
+ * - Safe for multi-instance environments
+ * - Idempotent
+ * - Atomic
+ */
 cron.schedule("* * * * *", async () => {
   const session = await mongoose.startSession();
 
   try {
+    const now = new Date();
+
     session.startTransaction();
 
+    /* ----------------------------------
+       1️⃣ Load admin with election setup
+    ---------------------------------- */
     const admin = await Admin.findOne().session(session);
+
     if (!admin?.electionSetup?.electionEnd) {
       await session.abortTransaction();
       return;
     }
 
-    const now = new Date();
     if (now < new Date(admin.electionSetup.electionEnd)) {
       await session.abortTransaction();
       return;
     }
 
-    const election = await Election.findOne({
-      resultsDeclared: false,
-    })
-      .sort({ createdAt: -1 })
-      .session(session);
+    /* ----------------------------------
+       2️⃣ Lock election (single winner)
+    ---------------------------------- */
+    const election = await Election.findOneAndUpdate(
+      {
+        resultsDeclared: false,
+      },
+      {
+        $set: {
+          resultsDeclared: true, // 🔐 LOCK
+        },
+      },
+      {
+        sort: { createdAt: -1 },
+        new: true,
+        session,
+      }
+    );
 
     if (!election) {
       await session.abortTransaction();
       return;
     }
 
-    console.log("🛑 Election ended. Calculating results...");
+    console.log("🛑 Election ended — calculating results");
 
+    /* ----------------------------------
+       3️⃣ Calculate results
+    ---------------------------------- */
     const candidates = await Candidate.find().session(session);
 
     const grouped = {};
@@ -60,32 +87,41 @@ cron.schedule("* * * * *", async () => {
       }
     );
 
-    // 🔐 Election update
+    /* ----------------------------------
+       4️⃣ Save election results
+    ---------------------------------- */
     election.result = finalResults;
-    election.resultsDeclared = true;
     election.isActive = false;
     election.endedAt = now;
+
     await election.save({ session });
 
-    // 🔐 Admin update (SAME TRANSACTION)
-    admin.electionSetup = {
-      electionStart: null,
-      electionEnd: null,
-      electionDurationHours: null,
-      candidateRegStart: null,
-      candidateRegEnd: null,
-      announcementMessage: [
-        "Election completed. Please check results.",
-      ],
-    };
-    await admin.save({ session });
+    /* ----------------------------------
+       5️⃣ FORCE admin state (authoritative)
+    ---------------------------------- */
+    await Admin.updateOne(
+      { _id: admin._id },
+      {
+        $set: {
+          "electionSetup.electionStart": null,
+          "electionSetup.electionEnd": null,
+          "electionSetup.electionDurationHours": null,
+          "electionSetup.candidateRegStart": null,
+          "electionSetup.candidateRegEnd": null,
+          "electionSetup.announcementMessage": [
+            "Election completed successfully. Results are now available.",
+          ],
+        },
+      },
+      { session }
+    );
 
     await session.commitTransaction();
 
-    console.log("🎉 Election + Announcement updated atomically");
+    console.log("🏆 Election closed + announcement updated");
   } catch (err) {
     await session.abortTransaction();
-    console.error("❌ Cron error:", err);
+    console.error("❌ Election scheduler failed:", err);
   } finally {
     session.endSession();
   }
