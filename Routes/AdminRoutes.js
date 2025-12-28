@@ -351,30 +351,6 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.get("/vote/count", async (req, res) => {
-  try {
-    const candidates = await candidate.find().sort({ voteCount: "desc" });
-    const partyVoteMap = {};
-
-    candidates.forEach((el) => {
-      if (partyVoteMap[el.party]) {
-        partyVoteMap[el.party] += el.voteCount;
-      } else {
-        partyVoteMap[el.party] = el.voteCount;
-      }
-    });
-    const voteRecord = Object.entries(partyVoteMap).map(([party, votes]) => ({
-      party,
-      votes,
-    }));
-
-    return res.status(200).json({ voteRecord });
-  } catch (err) {
-    console.error("Error fetching vote count:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
 router.delete("/delete/all", jwtMiddleware, async (req, res) => {
   try {
     await candidate.deleteMany({});
