@@ -3,93 +3,127 @@ const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
 
+// Startup log (helps detect multiple instances on Render)
+console.log("🚀 Election cron service started | PID:", process.pid);
+
 cron.schedule("* * * * *", async () => {
+  const runId = `${process.pid}-${Date.now()}`;
+
   try {
-    const admin = await Admin.findOne();
-    if (!admin || !admin.electionSetup) return;
+    console.log(`⏱️ [${runId}] Cron tick started`);
+
+    // 1️⃣ Fetch admin & election config
+    const admin = await Admin.findOne().lean();
+    if (!admin?.electionSetup) {
+      console.log(`ℹ️ [${runId}] No election setup found`);
+      return;
+    }
 
     const { electionStart, electionEnd } = admin.electionSetup;
-    if (!electionStart || !electionEnd) return;
+    if (!electionStart || !electionEnd) {
+      console.log(`ℹ️ [${runId}] Election dates not configured`);
+      return;
+    }
 
     const now = new Date();
+    if (now < new Date(electionEnd)) {
+      // Election still running
+      return;
+    }
 
-    const election = await Election.findOne().sort({ createdAt: -1 });
-    if (!election || election.resultsDeclared) return;
+    // 2️⃣ Get latest election (not yet declared)
+    const election = await Election.findOne({
+      resultsDeclared: false,
+    }).sort({ createdAt: -1 });
 
-    if (election.resultsDeclared) return;
+    if (!election) {
+      console.log(`ℹ️ [${runId}] No pending election to process`);
+      return;
+    }
 
-    if (now >= new Date(electionEnd)) {
-      console.log("🛑 Election ended. Calculating results...");
+    console.log(`🛑 [${runId}] Election ended. Calculating results...`);
 
-      const candidates = await Candidate.find();
+    // 3️⃣ Fetch candidates
+    const candidates = await Candidate.find().lean();
+    console.log(`🔍 [${runId}] Found ${candidates.length} candidates`);
 
-      console.log(`🔍 Found ${candidates.length} candidates.`);
+    if (!candidates.length) {
+      console.warn(`⚠️ [${runId}] No candidates found`);
+      return;
+    }
 
-      const groupedResults = {};
+    // 4️⃣ Group & sort candidates by position
+    const groupedResults = {};
 
-      for (const c of candidates) {
-        if (!groupedResults[c.position]) {
-          groupedResults[c.position] = [];
-        }
-
-        groupedResults[c.position].push({
-          candidateId: c._id,
-          name: c.name,
-          votes: c.votes,
-        });
+    for (const c of candidates) {
+      if (!groupedResults[c.position]) {
+        groupedResults[c.position] = [];
       }
-      // Sort winners
-      const finalResults = [];
 
-      for (const position in groupedResults) {
-        const sorted = groupedResults[position].sort(
-          (a, b) => b.votes - a.votes
-        );
+      groupedResults[c.position].push({
+        candidateId: c._id,
+        name: c.name,
+        votes: c.votes || 0,
+      });
+    }
 
-        finalResults.push({
+    const finalResults = Object.entries(groupedResults).map(
+      ([position, list]) => {
+        const sorted = list.sort((a, b) => b.votes - a.votes);
+        return {
           position,
           candidates: sorted,
           winner: sorted[0] || null,
-        });
+        };
       }
+    );
 
-      console.log("💾 Saving election results...");
-      const updatedElection = await Election.findOneAndUpdate(
-        {
-          _id: election._id,
-          resultsDeclared: false, // prevents race condition
+    // 5️⃣ Atomic update (prevents race condition)
+    const updatedElection = await Election.findOneAndUpdate(
+      {
+        _id: election._id,
+        resultsDeclared: false, // 🔐 atomic lock
+      },
+      {
+        $set: {
+          result: finalResults,
+          isActive: false,
+          resultsDeclared: true,
+          endedAt: now,
         },
-        {
-          $set: {
-            result: finalResults,
-            isActive: false,
-            resultsDeclared: true,
-            endedAt: now,
-          },
-        },
-        { new: true }
+      },
+      { new: true }
+    );
+
+    if (!updatedElection) {
+      console.log(
+        `⚠️ [${runId}] Election already processed by another instance`
       );
-
-      if (!updatedElection) {
-        console.log("⚠️ Election already processed by another cron run");
-        return;
-      }
-      console.log("🎉 Election results:", admin);
-      admin.electionSetup = {
-        electionStart: null,
-        electionEnd: null,
-        electionDurationHours: null,
-        candidateRegStart: null,
-        candidateRegEnd: null,
-        announcementMessage: ["Election completed. Please check results."],
-      };
-
-      await admin.save();
-
-      console.log("🏆 Election results saved successfully");
+      return;
     }
+
+    console.log(`🎉 [${runId}] Election results saved successfully`);
+
+    // 6️⃣ Reset admin election config
+    await Admin.updateOne(
+      { _id: admin._id },
+      {
+        $set: {
+          "electionSetup.electionStart": null,
+          "electionSetup.electionEnd": null,
+          "electionSetup.electionDurationHours": null,
+          "electionSetup.candidateRegStart": null,
+          "electionSetup.candidateRegEnd": null,
+          "electionSetup.announcementMessage": [
+            "Election completed. Please check results.",
+          ],
+        },
+      }
+    );
+
+    console.log(`🏆 [${runId}] Admin election setup reset`);
   } catch (err) {
-    console.error("❌ Election Cron Error:", err.message);
+    console.error(`❌ [${runId}] Election cron error:`, err);
   }
 });
 
