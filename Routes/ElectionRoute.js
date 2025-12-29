@@ -108,21 +108,9 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 router.get("/vote/count", async (req, res) => {
   try {
     const election = await Election.findOne()
-      .populate({
-        path: "finalResults.headBoyResults.candidate",
-        select:
-          "name rollNumber class position partysymbol profilePhoto",
-      })
-      .populate({
-        path: "finalResults.headGirlResults.candidate",
-        select:
-          "name rollNumber class position partysymbol profilePhoto",
-      })
-      .populate({
-        path: "finalResults.overallResults.candidate",
-        select:
-          "name rollNumber class position partysymbol profilePhoto",
-      })
+      .populate("finalResults.headBoyResults.candidate")
+      .populate("finalResults.headGirlResults.candidate")
+      .populate("finalResults.overallResults.candidate")
       .lean();
 
     if (!election) {
@@ -131,44 +119,35 @@ router.get("/vote/count", async (req, res) => {
 
     const formatResults = (results = []) =>
       results
+        .filter((entry) => entry.candidate) // 🔥 prevent null crash
         .map((entry) => ({
-          candidateId: entry.candidate?._id,
-          name: entry.candidate?.name,
-          rollNumber: entry.candidate?.rollNumber,
-          class: entry.candidate?.class,
-          position: entry.candidate?.position,
-          partysymbol: entry.candidate?.partysymbol,
-          profilePhoto: entry.candidate?.profilePhoto,
+          candidateId: entry.candidate._id,
+          name: entry.candidate.name,
+          rollNumber: entry.candidate.rollNumber,
+          class: entry.candidate.class,
+          position: entry.candidate.position,
+          partysymbol: entry.candidate.partysymbol,
+          profilePhoto: entry.candidate.profilePhoto,
           votes: entry.votes || 0,
         }))
         .sort((a, b) => b.votes - a.votes);
 
-    const headBoyResults = formatResults(
-      election.finalResults?.headBoyResults
-    );
-
-    const headGirlResults = formatResults(
-      election.finalResults?.headGirlResults
-    );
-
-    const overallResults = formatResults(
-      election.finalResults?.overallResults
-    );
-
     return res.json({
       success: true,
-      status: election.finalResults?.status || "ONGOING",
-      headBoyResults,
-      headGirlResults,
-      overallResults,
+      status: election.finalResults?.status,
+      headBoyResults: formatResults(election.finalResults?.headBoyResults),
+      headGirlResults: formatResults(election.finalResults?.headGirlResults),
+      overallResults: formatResults(election.finalResults?.overallResults),
     });
   } catch (err) {
+    console.error(err);
     return res.status(500).json({
       message: "Server error",
       error: err.message,
     });
   }
 });
+
 
 
 router.get("/history", async (req, res) => {
