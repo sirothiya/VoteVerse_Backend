@@ -6,12 +6,6 @@ const Candidate = require("../Models/Candidate");
 
 console.log("🚀 Election scheduler running | PID:", process.pid);
 
-/**
- * Runs every minute
- * - Safe for multi-instance environments
- * - Idempotent
- * - Atomic
- */
 cron.schedule("* * * * *", async () => {
   const session = await mongoose.startSession();
 

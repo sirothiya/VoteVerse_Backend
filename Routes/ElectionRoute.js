@@ -18,19 +18,12 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 
     console.log("User ID:", userId, "Candidate ID:", candidateId);
 
-    // ----------------------------------------
-    // 1. Validate User
-    // ----------------------------------------
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
     if (user.isVoted) {
       return res.status(400).json({ message: "You have already voted" });
     }
-
-    // ----------------------------------------
-    // 2. Validate Election
-    // ----------------------------------------
     const election = await Election.findOne();
     if (!election)
       return res.status(404).json({ message: "Election not found" });
@@ -45,17 +38,9 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
   return res.status(400).json({ message: "Election is not active" });
 }
 
-
-    // ----------------------------------------
-    // 3. Validate Candidate
-    // ----------------------------------------
     const candidate = await Candidate.findById(candidateId);
     if (!candidate)
       return res.status(404).json({ message: "Candidate not found" });
-
-    // ----------------------------------------
-    // 4. Update Candidate Votes
-    // ----------------------------------------
     candidate.voteCount += 1;
 
     candidate.votes.push({
@@ -64,10 +49,6 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     });
 
     await candidate.save();
-
-    // ----------------------------------------
-    // 5. Update Election Results
-    // ----------------------------------------
     const existingEntry = election.result.find(
       (entry) => entry.candidate.toString() === candidateId
     );
@@ -83,15 +64,8 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 
     await election.save();
 
-    // ----------------------------------------
-    // 6. Mark User as Voted
-    // ----------------------------------------
     user.isVoted = true;
     await user.save();
-
-    // ----------------------------------------
-    // 7. Response
-    // ----------------------------------------
     return res.json({
       success: true,
       message: "Vote cast successfully",
@@ -107,44 +81,67 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 
 router.get("/vote/count", async (req, res) => {
   try {
-    const election = await Election.findOne()
+    const election = await Election.findOne().lean();
+    if (!election) {
+      return res.status(404).json({ message: "Election not found" });
+    }
+
+    // 🟢 ELECTION STILL RUNNING → calculate from candidates
+    if (election.finalResults?.status !== "COMPLETED") {
+      const candidates = await Candidate.find({ status: "Approved" }).lean();
+
+      const formatted = candidates
+        .map((c) => ({
+          candidateId: c._id,
+          name: c.name,
+          rollNumber: c.rollNumber,
+          class: c.class,
+          position: c.position,
+          partysymbol: c.partysymbol,
+          profilePhoto: c.profilePhoto,
+          votes: c.voteCount || 0,
+        }))
+        .sort((a, b) => b.votes - a.votes);
+
+      return res.json({
+        success: true,
+        status: "ONGOING",
+        headBoyResults: formatted.filter((c) => c.position === "Head Boy"),
+        headGirlResults: formatted.filter((c) => c.position === "Head Girl"),
+        overallResults: formatted,
+      });
+    }
+
+    // 🔵 ELECTION COMPLETED → use finalResults
+    const formatResults = (results = []) =>
+      results
+        .filter((e) => e.candidate)
+        .map((e) => ({
+          candidateId: e.candidate._id,
+          name: e.candidate.name,
+          rollNumber: e.candidate.rollNumber,
+          class: e.candidate.class,
+          position: e.candidate.position,
+          partysymbol: e.candidate.partysymbol,
+          profilePhoto: e.candidate.profilePhoto,
+          votes: e.votes,
+        }));
+
+    const populatedElection = await Election.findOne()
       .populate("finalResults.headBoyResults.candidate")
       .populate("finalResults.headGirlResults.candidate")
       .populate("finalResults.overallResults.candidate")
       .lean();
 
-    if (!election) {
-      return res.status(404).json({ message: "Election not found" });
-    }
-
-    const formatResults = (results = []) =>
-      results
-        .filter((entry) => entry.candidate) // 🔥 prevent null crash
-        .map((entry) => ({
-          candidateId: entry.candidate._id,
-          name: entry.candidate.name,
-          rollNumber: entry.candidate.rollNumber,
-          class: entry.candidate.class,
-          position: entry.candidate.position,
-          partysymbol: entry.candidate.partysymbol,
-          profilePhoto: entry.candidate.profilePhoto,
-          votes: entry.votes || 0,
-        }))
-        .sort((a, b) => b.votes - a.votes);
-
     return res.json({
       success: true,
-      status: election.finalResults?.status,
-      headBoyResults: formatResults(election.finalResults?.headBoyResults),
-      headGirlResults: formatResults(election.finalResults?.headGirlResults),
-      overallResults: formatResults(election.finalResults?.overallResults),
+      status: "COMPLETED",
+      headBoyResults: formatResults(populatedElection.finalResults.headBoyResults),
+      headGirlResults: formatResults(populatedElection.finalResults.headGirlResults),
+      overallResults: formatResults(populatedElection.finalResults.overallResults),
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({
-      message: "Server error",
-      error: err.message,
-    });
+    return res.status(500).json({ message: err.message });
   }
 });
 
