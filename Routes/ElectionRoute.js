@@ -156,6 +156,7 @@ router.get("/history", async (req, res) => {
 .populate("finalResults.headGirlResults.candidate")
 .populate("finalResults.overallResults.candidate");
 
+console.log("Election History:", elections);
 
  return res.json(elections);
 });
