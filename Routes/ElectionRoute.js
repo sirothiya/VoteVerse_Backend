@@ -151,6 +151,7 @@ router.get("/history", async (req, res) => {
   const elections = await Election.find({ status: "COMPLETED" })
     .sort({ createdAt: -1 })
     .lean();
+    console.log("Elections History:", elections);
 
  return res.json(elections);
 });
