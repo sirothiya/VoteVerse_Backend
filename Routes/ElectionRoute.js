@@ -87,7 +87,7 @@ router.get("/vote/count", async (req, res) => {
     }
 
     // 🟢 ELECTION STILL RUNNING → calculate from candidates
-    if (election.finalResults?.status !== "COMPLETED") {
+    if (election?.status !== "COMPLETED") {
       const candidates = await Candidate.find({ status: "Approved" }).lean();
 
       const formatted = candidates
