@@ -7,17 +7,6 @@ const electionSchema = new mongoose.Schema({
   startTime: Date,
   endTime: Date,
 
-  // Temporary live vote storage
-  result: [
-    {
-      candidate: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Candidate",
-      },
-      votes: { type: Number, default: 0 },
-    },
-  ],
-
   // Final stored result after calculateResult()
   finalResults: {
     headBoyResults: [
