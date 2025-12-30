@@ -38,11 +38,11 @@ const electionSchema = new mongoose.Schema({
         votes: Number,
       },
     ],
-     status: {
+  },
+   status: {
     type: String,
     enum: ["ONGOING", "COMPLETED", "RESET"],
     default: "ONGOING",
-  },
   },
 });
 
