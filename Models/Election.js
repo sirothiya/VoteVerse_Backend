@@ -9,10 +9,12 @@ const electionSchema = new mongoose.Schema({
 
   // Final stored result after calculateResult()
   finalResults: {
+    totalVotes: Number,
     headBoyResults: [
       {
         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-        votes: Number,
+         votes: Number,
+
       },
     ],
     headGirlResults: [

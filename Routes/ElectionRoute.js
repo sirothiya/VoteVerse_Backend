@@ -76,11 +76,11 @@ router.get("/calculate-result", async (req, res) => {
     return res.status(400).json({ message: "Election not yet completed" });
   }
 
-  if (election.finalResults?.headBoyResults?.length) {
+  if (election.finalResults?.headBoyResults?.length || election.finalResults?.headGirlResults?.length) {
     return res.status(400).json({ message: "Results already calculated" });
   }
 
-  const candidates = await Candidate.find({ status: "Approved" }).lean();
+  const candidates = await Candidate.find({ status: "Approved" }).lean()
 
 const mapResults = (position) =>
   candidates
@@ -97,16 +97,21 @@ const mapResults = (position) =>
     candidates
       .map((c) => ({ candidate: c._id, name: c.name, votes: c.voteCount }))
       .sort((a, b) => b.votes - a.votes);
+      
+  
+      totalVotes = candidates.reduce(
+  (sum, c) => sum + c.voteCount,
+  0
+);
 
   election.finalResults = {
+    totalVotes: totalVotes,
     headBoyResults: mapResults("Head Boy"),
     headGirlResults: mapResults("Head Girl"),
     overallResults: mapOverallResults(),
   };
 
   await election.save();
-  await Candidate.updateMany({}, { voteCount: 0, votes: [] });
-  await User.updateMany({}, { isVoted: false });
   return res.json({ success: true , election: election.finalResults});
 });
 
@@ -120,6 +125,12 @@ router.get("/history", async (req, res) => {
     .populate("finalResults.overallResults.candidate");
 
   console.log("Election History:", elections);
+
+  console.log("Election History:", elections.map(e => ({
+    startTime: e.startTime,
+    endTime: e.endTime,
+    finalResults: e.finalResults
+  })));
 
   return res.json(elections);
 });
