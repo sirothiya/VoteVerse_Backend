@@ -148,10 +148,14 @@ router.get("/vote/count", async (req, res) => {
 
 
 router.get("/history", async (req, res) => {
-  const elections = await Election.find({ status: "COMPLETED" })
-    .sort({ createdAt: -1 })
-    .lean();
-    console.log("Elections History:", elections);
+  const elections = await Election.find({
+  status: "COMPLETED",
+})
+.sort({ endedAt: -1 })
+.populate("finalResults.headBoyResults.candidate")
+.populate("finalResults.headGirlResults.candidate")
+.populate("finalResults.overallResults.candidate");
+
 
  return res.json(elections);
 });
