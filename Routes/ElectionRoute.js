@@ -107,7 +107,7 @@ const mapResults = (position) =>
   await election.save();
   await Candidate.updateMany({}, { voteCount: 0, votes: [] });
   await User.updateMany({}, { isVoted: false });
-  return res.json({ success: true , ...election.finalResults});
+  return res.json({ success: true , election: election.finalResults});
 });
 
 router.get("/history", async (req, res) => {
