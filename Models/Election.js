@@ -37,13 +37,14 @@ const electionSchema = new mongoose.Schema({
         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
         votes: Number,
       },
-    ],
+    ],  
   },
    status: {
     type: String,
     enum: ["ONGOING", "COMPLETED", "RESET"],
     default: "ONGOING",
   },
+  
 });
 
 // 🧮 Pre-save hook to auto-calculate endTime based on startTime + duration
