@@ -80,17 +80,22 @@ router.get("/calculate-result", async (req, res) => {
     return res.status(400).json({ message: "Results already calculated" });
   }
 
-  const candidates = await Candidate.find({ status: "Approved" });
+  const candidates = await Candidate.find({ status: "Approved" }).lean();
 
-  const mapResults = (position) =>
-    candidates
-      .filter((c) => c.position === position)
-      .map((c) => ({ candidate: c._id, votes: c.voteCount }))
-      .sort((a, b) => b.votes - a.votes);
+const mapResults = (position) =>
+  candidates
+    .filter(c => c.position === position)
+    .map(c => ({
+      candidate: c._id,
+      name: c.name,
+      votes: c.voteCount
+    }))
+    .sort((a, b) => b.votes - a.votes);
+
 
   const mapOverallResults = () =>
     candidates
-      .map((c) => ({ candidate: c._id, votes: c.voteCount }))
+      .map((c) => ({ candidate: c._id, name: c.name, votes: c.voteCount }))
       .sort((a, b) => b.votes - a.votes);
 
   election.finalResults = {
@@ -100,7 +105,8 @@ router.get("/calculate-result", async (req, res) => {
   };
 
   await election.save();
-
+  await Candidate.updateMany({}, { voteCount: 0, votes: [] });
+  await User.updateMany({}, { isVoted: false });
   return res.json({ success: true , ...election.finalResults});
 });
 
