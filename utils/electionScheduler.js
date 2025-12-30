@@ -27,7 +27,7 @@ cron.schedule("* * * * *", async () => {
     const election = await Election.findOneAndUpdate(
       {
         status: "ONGOING",
-        endTime: { $lte: now },
+        endTime: { $exists: true, $lte: now },
       },
       {
         $set: {

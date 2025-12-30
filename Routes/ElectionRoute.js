@@ -7,7 +7,7 @@ const jwtMiddleware = require("../jwt").jwtMiddleware;
 
 // GET /api/election/status
 router.get("/status", async (req, res) => {
-  const election = await Election.findOne();
+  const election = await Election.findOne().sort({ createdAt: -1 });
   return res.json(election);
 });
 
@@ -27,16 +27,19 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     const election = await Election.findOne();
     if (!election)
       return res.status(404).json({ message: "Election not found" });
+    if (election.status !== "ONGOING") {
+      return res.status(400).json({ message: "Election is closed" });
+    }
 
     const now = new Date();
     if (
-  !election.startTime ||
-  !election.endTime ||
-  now < election.startTime ||
-  now > election.endTime
-) {
-  return res.status(400).json({ message: "Election is not active" });
-}
+      !election.startTime ||
+      !election.endTime ||
+      now < election.startTime ||
+      now > election.endTime
+    ) {
+      return res.status(400).json({ message: "Election is not active" });
+    }
 
     const candidate = await Candidate.findById(candidateId);
     if (!candidate)
@@ -49,21 +52,6 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     });
 
     await candidate.save();
-    const existingEntry = election.result.find(
-      (entry) => entry.candidate.toString() === candidateId
-    );
-
-    if (existingEntry) {
-      existingEntry.votes += 1;
-    } else {
-      election.result.push({
-        candidate: candidateId,
-        votes: 1,
-      });
-    }
-
-    await election.save();
-
     user.isVoted = true;
     await user.save();
     return res.json({
@@ -79,87 +67,55 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.get("/vote/count", async (req, res) => {
-  try {
-    const election = await Election.findOne().lean();
-    if (!election) {
-      return res.status(404).json({ message: "Election not found" });
-    }
+router.get("/calculate-result", async (req, res) => {
+  const election = await Election.findOne({ status: "COMPLETED" }).sort({
+    createdAt: -1,
+  });
 
-    // 🟢 ELECTION STILL RUNNING → calculate from candidates
-    if (election?.status !== "COMPLETED") {
-      const candidates = await Candidate.find({ status: "Approved" }).lean();
-
-      const formatted = candidates
-        .map((c) => ({
-          candidateId: c._id,
-          name: c.name,
-          rollNumber: c.rollNumber,
-          class: c.class,
-          position: c.position,
-          partysymbol: c.partysymbol,
-          profilePhoto: c.profilePhoto,
-          votes: c.voteCount || 0,
-        }))
-        .sort((a, b) => b.votes - a.votes);
-
-      return res.json({
-        success: true,
-        status: "ONGOING",
-        headBoyResults: formatted.filter((c) => c.position === "Head Boy"),
-        headGirlResults: formatted.filter((c) => c.position === "Head Girl"),
-        overallResults: formatted,
-      });
-    }
-
-    // 🔵 ELECTION COMPLETED → use finalResults
-    const formatResults = (results = []) =>
-      results
-        .filter((e) => e.candidate)
-        .map((e) => ({
-          candidateId: e.candidate._id,
-          name: e.candidate.name,
-          rollNumber: e.candidate.rollNumber,
-          class: e.candidate.class,
-          position: e.candidate.position,
-          partysymbol: e.candidate.partysymbol,
-          profilePhoto: e.candidate.profilePhoto,
-          votes: e.votes,
-        }));
-
-    const populatedElection = await Election.findOne()
-      .populate("finalResults.headBoyResults.candidate")
-      .populate("finalResults.headGirlResults.candidate")
-      .populate("finalResults.overallResults.candidate")
-      .lean();
-
-    return res.json({
-      success: true,
-      status: "COMPLETED",
-      headBoyResults: formatResults(populatedElection.finalResults.headBoyResults),
-      headGirlResults: formatResults(populatedElection.finalResults.headGirlResults),
-      overallResults: formatResults(populatedElection.finalResults.overallResults),
-    });
-  } catch (err) {
-    return res.status(500).json({ message: err.message });
+  if (!election) {
+    return res.status(400).json({ message: "Election not yet completed" });
   }
+
+  if (election.finalResults?.headBoyResults?.length) {
+    return res.status(400).json({ message: "Results already calculated" });
+  }
+
+  const candidates = await Candidate.find({ status: "Approved" });
+
+  const mapResults = (position) =>
+    candidates
+      .filter((c) => c.position === position)
+      .map((c) => ({ candidate: c._id, votes: c.voteCount }))
+      .sort((a, b) => b.votes - a.votes);
+
+  const mapOverallResults = () =>
+    candidates
+      .map((c) => ({ candidate: c._id, votes: c.voteCount }))
+      .sort((a, b) => b.votes - a.votes);
+
+  election.finalResults = {
+    headBoyResults: mapResults("Head Boy"),
+    headGirlResults: mapResults("Head Girl"),
+    overallResults: mapOverallResults(),
+  };
+
+  await election.save();
+
+  return res.json({ success: true , ...election.finalResults});
 });
-
-
 
 router.get("/history", async (req, res) => {
   const elections = await Election.find({
-  status: "COMPLETED",
-})
-.sort({ endedAt: -1 })
-.populate("finalResults.headBoyResults.candidate")
-.populate("finalResults.headGirlResults.candidate")
-.populate("finalResults.overallResults.candidate");
+    status: "COMPLETED",
+  })
+    .sort({ endedAt: -1 })
+    .populate("finalResults.headBoyResults.candidate")
+    .populate("finalResults.headGirlResults.candidate")
+    .populate("finalResults.overallResults.candidate");
 
-console.log("Election History:", elections);
+  console.log("Election History:", elections);
 
- return res.json(elections);
+  return res.json(elections);
 });
-
 
 module.exports = router;
