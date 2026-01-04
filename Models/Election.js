@@ -32,7 +32,7 @@ const electionSchema = new mongoose.Schema({
   },
    status: {
     type: String,
-    enum: ["ONGOING", "COMPLETED", "RESET"],
+    enum: ["ONGOING", "COMPLETED"],
     default: "ONGOING",
   },
   

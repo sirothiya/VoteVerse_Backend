@@ -220,6 +220,7 @@ router.put("/electionsetup", jwtMiddleware, async (req, res) => {
     } else {
       election.startTime = setupData.electionStart || null;
       election.endTime = endTime;
+      election.status = "ONGOING";
     }
 
     await election.save();
