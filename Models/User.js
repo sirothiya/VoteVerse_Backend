@@ -35,6 +35,10 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  votesCast: {
+    headBoy: { type: Boolean, default: false },
+    headGirl: { type: Boolean, default: false },
+  }
 });
 //it is a mongoose middleware. runs before saving the document
 userSchema.pre("save", async function (next) {

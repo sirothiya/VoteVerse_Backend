@@ -16,54 +16,65 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     const userId = req.adminId;
     const candidateId = req.params.candidateId;
 
-    console.log("User ID:", userId, "Candidate ID:", candidateId);
-
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (user.isVoted) {
-      return res.status(400).json({ message: "You have already voted" });
-    }
     const election = await Election.findOne();
-    if (!election)
-      return res.status(404).json({ message: "Election not found" });
-    if (election.status !== "ONGOING") {
-      return res.status(400).json({ message: "Election is closed" });
+    if (!election || election.status !== "ONGOING") {
+      return res.status(400).json({ message: "Election not active" });
     }
 
     const now = new Date();
-    if (
-      !election.startTime ||
-      !election.endTime ||
-      now < election.startTime ||
-      now > election.endTime
-    ) {
+    if (now < election.startTime || now > election.endTime) {
       return res.status(400).json({ message: "Election is not active" });
     }
 
     const candidate = await Candidate.findById(candidateId);
-    if (!candidate)
+    if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
-    candidate.voteCount += 1;
+    }
 
+    // 🔥 CORE LOGIC
+    if (candidate.position === "Head Boy" && user.votesCast.headBoy) {
+      return res.status(400).json({ message: "Already voted for Head Boy" });
+    }
+
+    if (candidate.position === "Head Girl" && user.votesCast.headGirl) {
+      return res.status(400).json({ message: "Already voted for Head Girl" });
+    }
+
+    // Record vote
+    candidate.voteCount += 1;
     candidate.votes.push({
       user: userId,
       votedAt: new Date(),
     });
-
     await candidate.save();
-    user.isVoted = true;
+
+    // Update user's vote status per category
+    if (candidate.position === "Head Boy") {
+      user.votesCast.headBoy = true;
+    }
+
+    if (candidate.position === "Head Girl") {
+      user.votesCast.headGirl = true;
+    }
+
+    // ✅ Mark fully voted ONLY when both done
+    if (user.votesCast.headBoy && user.votesCast.headGirl) {
+      user.isVoted = true;
+    }
+
     await user.save();
+
     return res.json({
       success: true,
-      message: "Vote cast successfully",
-      votedTo: candidate.name,
+      message: `Vote cast successfully for ${candidate.position}`,
+      fullyVoted: user.isVoted,
     });
   } catch (err) {
     console.error("Vote Error:", err);
-    return res
-      .status(500)
-      .json({ message: "Server error", error: err.message });
+    return res.status(500).json({ message: "Server error" });
   }
 });
 
@@ -76,33 +87,31 @@ router.get("/calculate-result", async (req, res) => {
     return res.status(400).json({ message: "Election not yet completed" });
   }
 
-  if (election.finalResults?.headBoyResults?.length || election.finalResults?.headGirlResults?.length) {
+  if (
+    election.finalResults?.headBoyResults?.length ||
+    election.finalResults?.headGirlResults?.length
+  ) {
     return res.status(400).json({ message: "Results already calculated" });
   }
 
-  const candidates = await Candidate.find({ status: "Approved" }).lean()
+  const candidates = await Candidate.find({ status: "Approved" }).lean();
 
-const mapResults = (position) =>
-  candidates
-    .filter(c => c.position === position)
-    .map(c => ({
-      candidate: c._id,
-      name: c.name,
-      votes: c.voteCount
-    }))
-    .sort((a, b) => b.votes - a.votes);
-
+  const mapResults = (position) =>
+    candidates
+      .filter((c) => c.position === position)
+      .map((c) => ({
+        candidate: c._id,
+        name: c.name,
+        votes: c.voteCount,
+      }))
+      .sort((a, b) => b.votes - a.votes);
 
   const mapOverallResults = () =>
     candidates
       .map((c) => ({ candidate: c._id, name: c.name, votes: c.voteCount }))
       .sort((a, b) => b.votes - a.votes);
-      
-  
-      totalVotes = candidates.reduce(
-  (sum, c) => sum + c.voteCount,
-  0
-);
+
+  totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
 
   election.finalResults = {
     totalVotes: totalVotes,
@@ -112,7 +121,7 @@ const mapResults = (position) =>
   };
 
   await election.save();
-  return res.json({ success: true , election: election.finalResults});
+  return res.json({ success: true, election: election.finalResults });
 });
 
 router.get("/history", async (req, res) => {
@@ -126,11 +135,14 @@ router.get("/history", async (req, res) => {
 
   console.log("Election History:", elections);
 
-  console.log("Election History:", elections.map(e => ({
-    startTime: e.startTime,
-    endTime: e.endTime,
-    finalResults: e.finalResults
-  })));
+  console.log(
+    "Election History:",
+    elections.map((e) => ({
+      startTime: e.startTime,
+      endTime: e.endTime,
+      finalResults: e.finalResults,
+    }))
+  );
 
   return res.json(elections);
 });
