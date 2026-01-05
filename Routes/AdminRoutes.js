@@ -106,23 +106,7 @@ router.post("/adminLogin", async (req, res) => {
   }
 });
 
-router.get("/", async (req, res) => {
-  try {
-    const candidates = await Admin.find();
-    if (candidate.length > 1)
-      return res.status(400).json({ error: "Admin Already Exist" });
-    const data = candidates?.map((c) => ({
-      name: c.name,
-      email: c.email,
-      schoolName: c.schoolName,
-      id: c._id,
-    }));
-    return res.status(200).json(data);
-  } catch (err) {
-    console.log("Error fetching admin:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
+
 
 router.post("/election/reset", jwtMiddleware, async (req, res) => {
   try {
@@ -161,8 +145,9 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     await admin.save();
 
     await User.updateMany({}, { isVoted: false });
+    
 
-    await candidate.deleteMany({});
+    await candidate.deleteMany({ election: election._id });
 
     return res.json({
       success: true,
@@ -175,64 +160,136 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
   }
 });
 
+// router.put("/electionsetup", jwtMiddleware, async (req, res) => {
+//   try {
+//     const adminId = req.adminId;
+//     const setupData = req.body;
+
+//     console.log("Received election setup data:", setupData);
+
+//     Object.keys(setupData).forEach((key) => {
+//       if (setupData[key] === "" || setupData[key] === undefined) {
+//         delete setupData[key];
+//       }
+//     });
+
+//     let endTime = null;
+//     if (setupData.electionStart && setupData.electionDurationHours) {
+//       const start = new Date(setupData.electionStart);
+//       endTime = new Date(
+//         start.getTime() + setupData.electionDurationHours * 3600000
+//       );
+//     }
+
+//     setupData.electionEnd = endTime;
+
+   
+//     const admin = await Admin.findByIdAndUpdate(
+//       adminId,
+//       { $set: { electionSetup: setupData } },
+//       { new: true }
+//     );
+
+//     if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    
+//     let election = await Election.findOne();
+//     if (!election) {
+//       election = new Election({
+//         isActive: false,
+//         startTime: setupData.electionStart || null,
+//         endTime: endTime,
+//       });
+//     } else {
+//       election.startTime = setupData.electionStart || null;
+//       election.endTime = endTime;
+//       election.status = "ONGOING";
+//     }
+
+//     await election.save();
+
+//     console.log("Saved Election End:", admin.electionSetup.electionEnd);
+
+//     return res.status(200).json({
+//       message: "Election setup updated",
+//       electionSetup: admin.electionSetup,
+//     });
+//   } catch (err) {
+//     console.log("Error in election setup:", err);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
+
 router.put("/electionsetup", jwtMiddleware, async (req, res) => {
   try {
     const adminId = req.adminId;
     const setupData = req.body;
 
-    console.log("Received election setup data:", setupData);
-
-    // Remove empty fields (prevents overwriting with null)
+    // 1️⃣ Clean empty fields
     Object.keys(setupData).forEach((key) => {
       if (setupData[key] === "" || setupData[key] === undefined) {
         delete setupData[key];
       }
     });
 
-    // Calculate election end
-    let endTime = null;
-    if (setupData.electionStart && setupData.electionDurationHours) {
-      const start = new Date(setupData.electionStart);
-      endTime = new Date(
-        start.getTime() + setupData.electionDurationHours * 3600000
-      );
+    // 2️⃣ Calculate start & end time
+    if (!setupData.electionStart || !setupData.electionDurationHours) {
+      return res.status(400).json({
+        message: "Election start time and duration are required",
+      });
     }
 
-    setupData.electionEnd = endTime;
+    const startTime = new Date(setupData.electionStart);
+    const endTime = new Date(
+      startTime.getTime() + setupData.electionDurationHours * 3600000
+    );
 
-    // Update admin
+    // 3️⃣ Close any ONGOING election (VERY IMPORTANT)
+    await Election.updateMany(
+      { status: "ONGOING" },
+      {
+        $set: {
+          status: "COMPLETED",
+          isActive: false,
+        },
+      }
+    );
+
+    // 4️⃣ Create a BRAND NEW election
+    const election = await Election.create({
+      isActive: true,
+      startTime,
+      endTime,
+      status: "ONGOING",
+      electionSession: setupData.electionSession, // e.g. 2024-25
+    });
+
+    // 5️⃣ Update admin setup (UI purpose only)
     const admin = await Admin.findByIdAndUpdate(
       adminId,
-      { $set: { electionSetup: setupData } },
+      {
+        $set: {
+          electionSetup: {
+            ...setupData,
+            electionStart: startTime,
+            electionEnd: endTime,
+            electionId: election._id,
+          },
+        },
+      },
       { new: true }
     );
 
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
-
-    // Update or create election
-    let election = await Election.findOne();
-    if (!election) {
-      election = new Election({
-        isActive: false,
-        startTime: setupData.electionStart || null,
-        endTime: endTime,
-      });
-    } else {
-      election.startTime = setupData.electionStart || null;
-      election.endTime = endTime;
-      election.status = "ONGOING";
+    if (!admin) {
+      return res.status(404).json({ message: "Admin not found" });
     }
 
-    await election.save();
-
-    console.log("Saved Election End:", admin.electionSetup.electionEnd);
-
     return res.status(200).json({
-      message: "Election setup updated",
-      electionSetup: admin.electionSetup,
+      message: "New election created successfully",
+      election,
     });
   } catch (err) {
-    console.log("Error in election setup:", err);
+    console.error("Election Setup Error:", err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -251,8 +308,9 @@ router.put("/updateStatus/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const status = req.body.status;
     const rollNumber = req.params.rollNumber;
+    const activeElection = await Election.findOne({ isActive: true });
     const candi = await candidate.findOneAndUpdate(
-      { rollNumber: rollNumber },
+      { rollNumber: rollNumber,election: activeElection._id },
       { status: status },
       { new: true }
     );
@@ -287,74 +345,12 @@ router.post("/announcement", async (req, res) => {
   }
 });
 
-router.put("/:id", jwtMiddleware, async (req, res) => {
-  try {
-    if (!(await checkAdmin(req.user.id)))
-      return res.status(403).json({ message: "user is not an admin" });
-    const id = req.params.id;
-    const updatedData = req.body;
-    const updatedCandidate = await candidate.findByIdAndUpdate(
-      id,
-      updatedData,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
-    if (!updatedCandidate) {
-      return res.status(404).json({ message: "Candidate not found" });
-    }
-    return res.status(200).json({
-      message: "Candidate updated successfully",
-      candidate: updatedCandidate,
-    });
-  } catch (err) {
-    console.error("Error updating candidate:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.delete("/:id", jwtMiddleware, async (req, res) => {
-  try {
-    if (!(await checkAdmin(req.user.id)))
-      return res.status(403).json({ message: "user is not an admin" });
-    const id = req.params.id;
-    const deletedCandidate = await candidate.findByIdAndDelete(id);
-    if (!deletedCandidate) {
-      return res.status(400).json({ message: "No candidate found" });
-    }
-    return res.status(200).json({ message: "Candidate deleted successfully" });
-  } catch (err) {
-    console.error("Error deleting candidate:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
-
-router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
-  try {
-    const candidateId = req.params.candidateId;
-    const userId = req.user.id;
-    const user = await User.findById(userId);
-    const Candidate = await candidate.findById(candidateId);
-    if (user.isVoted)
-      return res.status(403).json({ error: "User has already voted" });
-    if (user.role === "Admin")
-      return res.status(403).json({ error: "Admin cannot vote" });
-    Candidate.votes.push({ user: userId, votedAt: new Date() });
-    Candidate.voteCount++;
-    await Candidate.save();
-    user.isVoted = true;
-    await user.save();
-    return res.status(200).json({ message: "Vote cast successfully" });
-  } catch (err) {
-    console.error("Error casting vote:", err);
-    res.status(500).json({ error: "Internal server error" });
-  }
-});
 
 router.delete("/delete/all", jwtMiddleware, async (req, res) => {
   try {
-    await candidate.deleteMany({});
+    const election = await Election.findOne({ isActive: true });
+    const electionId = election._id;
+    await candidate.deleteMany({ election: electionId });
     await User.updateMany({}, { $set: { isVoted: false } });
     return res
       .status(200)

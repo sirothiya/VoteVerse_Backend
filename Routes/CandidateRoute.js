@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const Candidate = require("../Models/Candidate");
+const Election = require("../Models/Election");
 const { generateToken, jwtMiddleware } = require("../jwt");
 
 // ------------------ File Upload Setup ------------------
@@ -42,7 +43,7 @@ router.post("/candidateSignup", async (req, res) => {
   try {
     const data = req.body;
 
-    // ✅ Validate class safely
+   
     const classMatch = data.class?.match(/\d+/);
     if (!classMatch) {
       return res.status(400).json({
@@ -57,11 +58,16 @@ router.post("/candidateSignup", async (req, res) => {
       });
     }
 
-    // ✅ Check rollNumber + class uniqueness
-    const existingCandidate = await Candidate.findOne({
-      rollNumber: data.rollNumber,
-      class: data.class,
-    });
+    
+    const election = await Election.findOne({ isActive: true });
+     if (!election) {
+      return res.status(400).json({ error: "No active election" });
+    }
+const existingCandidate = await Candidate.findOne({
+  rollNumber: data.rollNumber,
+  election: election._id,
+});
+
 
     if (existingCandidate) {
       return res.status(400).json({
@@ -79,6 +85,7 @@ router.post("/candidateSignup", async (req, res) => {
       dob: data.dob,
       gender: data.gender,
       position: data.position,
+      election: election._id,
     });
 
     const savedCandidate = await newCandidate.save();
@@ -105,7 +112,14 @@ router.post("/candidateLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
     console.log("1");
-    const can = await Candidate.findOne({ rollNumber });
+    // this new line is being added..
+    const election = await Election.findOne({ isActive: true });
+
+const can = await Candidate.findOne({
+  rollNumber,
+  election: election._id,
+});
+
     console.log("11");
     if (!can) {
       return res
@@ -156,7 +170,12 @@ router.get("/", async (req, res) => {
 router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const candidate = await Candidate.findOne({ rollNumber }).lean(); // 'let' since we might reassign
+    const activeElection = await Election.findOne({ isActive: true });
+    const candidate = await Candidate.findOne({
+  rollNumber,
+  election: activeElection._id
+})
+
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
@@ -176,7 +195,12 @@ router.get(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      let candidate = await Candidate.findOne({ rollNumber }); // 'let' since we might reassign
+      const activeElection = await Election.findOne({ isActive: true });
+      let candidate = await Candidate.findOne({
+  rollNumber,
+  election: activeElection._id
+})
+// 'let' since we might reassign
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
@@ -204,8 +228,12 @@ router.post(
   async (req, res) => {
     try {
       const { rollNumber } = req.params;
+    const activeElection = await Election.findOne({ isActive: true });
+      const candidate = await Candidate.findOne({
+  rollNumber,
+  election: activeElection._id,
+});
 
-      const candidate = await Candidate.findOne({ rollNumber });
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
@@ -269,7 +297,12 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
     const rollNumber = req.params.rollNumber;
 
     // Find the candidate
-    const candidate = await Candidate.findOne({ rollNumber });
+    const activeElection = await Election.findOne({ isActive: true });
+    const candidate = await Candidate.findOneAndDelete({
+  rollNumber,
+  election: activeElection._id,
+});
+
 
     if (!candidate) {
       return res.status(404).json({

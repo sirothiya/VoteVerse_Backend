@@ -1,54 +1,119 @@
 const mongoose = require("mongoose");
 
-// 
+
+// const electionSchema = new mongoose.Schema({
+//   isActive: { type: Boolean, default: false },
+//   startTime: Date,
+//   endTime: Date,
+
+//   finalResults: {
+//     totalVotes: Number,
+//     headBoyResults: [
+//       {
+//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
+//          votes: Number,
+
+//       },
+//     ],
+//     headGirlResults: [
+//       {
+//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
+//         votes: Number,
+//       },
+//     ],
+//     overallResults: [
+//       {
+//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
+//         votes: Number,
+//       },
+//     ],  
+//   },
+//    status: {
+//     type: String,
+//     enum: ["ONGOING", "COMPLETED"],
+//     default: "ONGOING",
+//   },
+  
+// });
 
 const electionSchema = new mongoose.Schema({
-  isActive: { type: Boolean, default: false },
-  startTime: Date,
-  endTime: Date,
-
-  // Final stored result after calculateResult()
-  finalResults: {
-    totalVotes: Number,
-    headBoyResults: [
-      {
-        candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-         votes: Number,
-
-      },
-    ],
-    headGirlResults: [
-      {
-        candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-        votes: Number,
-      },
-    ],
-    overallResults: [
-      {
-        candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-        votes: Number,
-      },
-    ],  
+  isActive: {
+    type: Boolean,
+    default: false,
   },
-   status: {
+
+  startTime: {
+    type: Date,
+    required: true,
+  },
+
+  endTime: {
+    type: Date,
+    required: true,
+  },
+
+  electionSession: {
+    type: String, 
+    required: true,
+  },
+
+  status: {
     type: String,
     enum: ["ONGOING", "COMPLETED"],
     default: "ONGOING",
   },
-  
+
+  finalResults: {
+    totalVotes: Number,
+
+    headBoyResults: [
+      {
+        candidateId: mongoose.Schema.Types.ObjectId,
+        name: String,
+        admissionNo: String,
+        class: String,
+        section: String,
+        photo: String,
+        position: String,
+        votes: Number,
+      },
+    ],
+
+    headGirlResults: [
+      {
+        candidateId: mongoose.Schema.Types.ObjectId,
+        name: String,
+        admissionNo: String,
+        class: String,
+        section: String,
+        photo: String,
+        photo: String,
+        position: String,
+        votes: Number,
+      },
+    ],
+
+    overallResults: [
+      {
+        candidateId: mongoose.Schema.Types.ObjectId,
+        name: String,
+        position: String,
+        votes: Number,
+      },
+    ],
+  },
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-// 🧮 Pre-save hook to auto-calculate endTime based on startTime + duration
-electionSchema.pre("save", function (next) {
-  if (this.startTime && this.electionDuration) {
-    const start = new Date(this.startTime);
-    const end = new Date(
-      start.getTime() + this.electionDuration * 60 * 60 * 1000
-    );
-    this.endTime = end;
-  }
-  next();
-});
+electionSchema.index(
+  { status: 1 },
+  { unique: true, partialFilterExpression: { status: "ONGOING" } }
+);
+
 
 const Election = mongoose.model("Election", electionSchema);
 module.exports = Election;
