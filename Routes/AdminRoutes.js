@@ -129,7 +129,7 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
         await election.save();
       } catch (err) {
         console.error("Error calculating final results during reset:", err);
-        ret;
+        
       }
     }
     // 5️⃣ Reset admin election configuration
@@ -147,7 +147,10 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     await User.updateMany({}, { isVoted: false });
     
 
-    await candidate.deleteMany({ election: election._id });
+    if (election) {
+  await candidate.deleteMany({ election: election._id });
+}
+
 
     return res.json({
       success: true,
