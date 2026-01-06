@@ -102,6 +102,11 @@ const electionSchema = new mongoose.Schema({
       },
     ],
   },
+  resultsCalculated: {
+  type: Boolean,
+  default: false,
+}
+,
 
   createdAt: {
     type: Date,

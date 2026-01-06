@@ -201,9 +201,9 @@ router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without results
     const election = await Election.findOne({
-      status: "COMPLETED",
-      finalResults: { $exists: false },
-    }).sort({ endTime: -1 });
+  status: "COMPLETED",
+  resultsCalculated: false,
+}).sort({ endTime: -1 });
 
     if (!election) {
       return res.status(400).json({
@@ -260,7 +260,7 @@ router.get("/calculate-result", async (req, res) => {
       headGirlResults,
       overallResults,
     };
-
+   election.resultsCalculated = true;
     await election.save();
 
     return res.json({
