@@ -223,6 +223,8 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 //   }
 // });
 
+
+
 router.put("/electionsetup", jwtMiddleware, async (req, res) => {
   try {
     const adminId = req.adminId;
@@ -257,6 +259,17 @@ router.put("/electionsetup", jwtMiddleware, async (req, res) => {
         },
       }
     );
+    const getElectionSession = (startTime, endTime) => {
+  const startYear = startTime.getFullYear();
+  const endYear = endTime.getFullYear();
+
+  if (startYear === endYear) {
+    return `${startYear}-${startYear + 1}`;
+  }
+
+  return `${startYear}-${endYear}`;
+};
+  const electionSession = getElectionSession(startTime, endTime);
 
     // 4️⃣ Create a BRAND NEW election
     const election = await Election.create({
@@ -264,7 +277,7 @@ router.put("/electionsetup", jwtMiddleware, async (req, res) => {
       startTime,
       endTime,
       status: "ONGOING",
-      electionSession: setupData.electionSession, // e.g. 2024-25
+      electionSession: electionSession, // e.g. 2024-25
     });
 
     // 5️⃣ Update admin setup (UI purpose only)
