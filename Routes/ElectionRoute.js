@@ -204,6 +204,7 @@ router.get("/calculate-result", async (req, res) => {
   status: "COMPLETED",
   resultsCalculated: false,
 }).sort({ endTime: -1 });
+console.log("Calculating results for election:", election);
 
     if (!election) {
       return res.status(400).json({
@@ -217,6 +218,7 @@ router.get("/calculate-result", async (req, res) => {
       status: "Approved",
     }).lean();
 
+    console.log("Candidates found:", candidates.length);
     if (!candidates.length) {
       return res.status(400).json({ message: "No candidates found" });
     }
