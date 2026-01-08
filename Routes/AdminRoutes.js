@@ -9,6 +9,7 @@ const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
 const calculateFinalResults = require("../utils/calculateFinalResults");
 const { generateToken, jwtMiddleware } = require("../jwt");
+const getActiveElection = require("../utils/getActiveElection");
 
 const checkAdmin = async (userId) => {
   try {
@@ -117,7 +118,7 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     }
 
     // 2️⃣ Fetch active election
-    const election = await Election.findOne({ isActive: true });
+    const election = await getActiveElection();
 
     // 3️⃣ Finalize election results
     if (election) {

@@ -4,6 +4,7 @@ const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
 const User = require("../Models/User");
 const { get } = require("mongoose");
+const getActiveElection = require("../utils/getActiveElection");
 const jwtMiddleware = require("../jwt").jwtMiddleware;
 
 // GET /api/election/status
