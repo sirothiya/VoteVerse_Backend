@@ -34,7 +34,6 @@ router.get("/status", async (req, res) => {
 //       return res.status(404).json({ message: "Candidate not found" });
 //     }
 
-  
 //     if (candidate.position === "Head Boy" && user.votesCast.headBoy) {
 //       return res.status(400).json({ message: "Already voted for Head Boy" });
 //     }
@@ -43,7 +42,6 @@ router.get("/status", async (req, res) => {
 //       return res.status(400).json({ message: "Already voted for Head Girl" });
 //     }
 
-    
 //     candidate.voteCount += 1;
 //     candidate.votes.push({
 //       user: userId,
@@ -51,7 +49,6 @@ router.get("/status", async (req, res) => {
 //     });
 //     await candidate.save();
 
-    
 //     if (candidate.position === "Head Boy") {
 //       user.votesCast.headBoy = true;
 //     }
@@ -135,8 +132,7 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     if (candidate.position === "Head Boy") user.votesCast.headBoy = true;
     if (candidate.position === "Head Girl") user.votesCast.headGirl = true;
 
-    user.isVoted =
-      user.votesCast.headBoy && user.votesCast.headGirl;
+    user.isVoted = user.votesCast.headBoy && user.votesCast.headGirl;
 
     await user.save();
 
@@ -150,7 +146,6 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 
 // router.get("/calculate-result", async (req, res) => {
 //   const election = await Election.findOne({ status: "COMPLETED" }).sort({
@@ -201,10 +196,10 @@ router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without results
     const election = await Election.findOne({
-  status: "COMPLETED",
-  resultsCalculated: false,
-}).sort({ endTime: -1 });
-console.log("Calculating results for election:", election);
+      status: "COMPLETED",
+      resultsCalculated: false,
+    }).sort({ endTime: -1 });
+    console.log("Calculating results for election:", election);
 
     if (!election) {
       return res.status(400).json({
@@ -250,10 +245,7 @@ console.log("Calculating results for election:", election);
       .sort((a, b) => b.votes - a.votes);
 
     // 6️⃣ Total votes
-    const totalVotes = candidates.reduce(
-      (sum, c) => sum + c.voteCount,
-      0
-    );
+    const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
 
     // 7️⃣ Freeze results forever
     election.finalResults = {
@@ -262,7 +254,7 @@ console.log("Calculating results for election:", election);
       headGirlResults,
       overallResults,
     };
-   election.resultsCalculated = true;
+    election.resultsCalculated = true;
     await election.save();
 
     return res.json({
@@ -275,7 +267,6 @@ console.log("Calculating results for election:", election);
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 
 // router.get("/history", async (req, res) => {
 //   const elections = await Election.find({
@@ -313,6 +304,5 @@ router.get("/history", async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 });
-
 
 module.exports = router;
