@@ -147,9 +147,8 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     await User.updateMany({}, { isVoted: false });
     
 
-    if (election) {
-  await candidate.deleteMany({ election: election._id });
-}
+  await candidate.deleteMany({});
+
 
 
     return res.json({
