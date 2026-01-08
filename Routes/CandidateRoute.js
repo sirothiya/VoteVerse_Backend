@@ -9,6 +9,8 @@ const { generateToken, jwtMiddleware } = require("../jwt");
 const fs = require("fs");
 const path = require("path");
 const multer = require("multer");
+const getActiveElection = require("../utils/getActiveElection");
+const { get } = require("http");
 
 // Ensure folders exist
 [
@@ -43,7 +45,6 @@ router.post("/candidateSignup", async (req, res) => {
   try {
     const data = req.body;
 
-   
     const classMatch = data.class?.match(/\d+/);
     if (!classMatch) {
       return res.status(400).json({
@@ -58,16 +59,15 @@ router.post("/candidateSignup", async (req, res) => {
       });
     }
 
-    
-    const election = await Election.findOne({ isActive: true });
-     if (!election) {
+    const election = await getActiveElection();
+    // const election = await Election.findOne({ isActive: true });
+    if (!election) {
       return res.status(400).json({ error: "No active election" });
     }
-const existingCandidate = await Candidate.findOne({
-  rollNumber: data.rollNumber,
-  election: election._id,
-});
-
+    const existingCandidate = await Candidate.findOne({
+      rollNumber: data.rollNumber,
+      election: election._id,
+    });
 
     if (existingCandidate) {
       return res.status(400).json({
@@ -113,12 +113,12 @@ router.post("/candidateLogin", async (req, res) => {
     const { rollNumber, password } = req.body;
     console.log("1");
     // this new line is being added..
-    const election = await Election.findOne({ isActive: true });
-
-const can = await Candidate.findOne({
-  rollNumber,
-  election: election._id,
-});
+    // const election = await Election.findOne({ isActive: true });
+    const election = await getActiveElection();
+    const can = await Candidate.findOne({
+      rollNumber,
+      election: election._id,
+    });
 
     console.log("11");
     if (!can) {
@@ -170,12 +170,11 @@ router.get("/", async (req, res) => {
 router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const activeElection = await Election.findOne({ isActive: true });
+    const activeElection = await getActiveElection();
     const candidate = await Candidate.findOne({
-  rollNumber,
-  election: activeElection._id
-})
-
+      rollNumber,
+      election: activeElection._id,
+    });
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
@@ -195,12 +194,12 @@ router.get(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      const activeElection = await Election.findOne({ isActive: true });
+      const activeElection = await getActiveElection();
       let candidate = await Candidate.findOne({
-  rollNumber,
-  election: activeElection._id
-})
-// 'let' since we might reassign
+        rollNumber,
+        election: activeElection._id,
+      });
+      // 'let' since we might reassign
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
@@ -228,24 +227,22 @@ router.post(
   async (req, res) => {
     try {
       const { rollNumber } = req.params;
-    const activeElection = await Election.findOne({ isActive: true });
+      const activeElection = await getActiveElection();
       const candidate = await Candidate.findOne({
-  rollNumber,
-  election: activeElection._id,
-});
+        rollNumber,
+        election: activeElection._id,
+      });
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
 
-      
       if (candidate.profilecompleted) {
         return res.status(400).json({
           message: "Profile already completed",
         });
       }
 
-     
       if (req.files?.campaignVideo)
         candidate.campaignVideo = `/uploads/videos/${req.files.campaignVideo[0].filename}`;
 
@@ -259,7 +256,7 @@ router.post(
         candidate.partysymbol = `/uploads/others/${req.files.partysymbol[0].filename}`;
 
       if (req.files?.manifesto)
-        candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`; 
+        candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`;
 
       candidate.achievements = req.body.achievements
         ? JSON.parse(req.body.achievements)
@@ -297,12 +294,11 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
     const rollNumber = req.params.rollNumber;
 
     // Find the candidate
-    const activeElection = await Election.findOne({ isActive: true });
+    const activeElection = await getActiveElection();
     const candidate = await Candidate.findOneAndDelete({
-  rollNumber,
-  election: activeElection._id,
-});
-
+      rollNumber,
+      election: activeElection._id,
+    });
 
     if (!candidate) {
       return res.status(404).json({

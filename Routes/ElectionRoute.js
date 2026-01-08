@@ -3,11 +3,13 @@ const router = express.Router();
 const Election = require("../Models/Election");
 const Candidate = require("../Models/Candidate");
 const User = require("../Models/User");
+const { get } = require("mongoose");
+const getActiveElection = require("../utils/getActiveElection");
 const jwtMiddleware = require("../jwt").jwtMiddleware;
 
 // GET /api/election/status
 router.get("/status", async (req, res) => {
-  const election = await Election.findOne().sort({ createdAt: -1 });
+  const election = await getActiveElection();
   return res.json(election);
 });
 
@@ -83,10 +85,11 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     // 1️⃣ Fetch ACTIVE election
-    const election = await Election.findOne({
-      status: "ONGOING",
-      isActive: true,
-    });
+    // const election = await Election.findOne({
+    //   status: "ONGOING",
+    //   isActive: true,
+    // });
+    const election =await getActiveElection();
 
     if (!election) {
       return res.status(400).json({ message: "No active election" });
