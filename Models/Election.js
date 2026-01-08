@@ -1,40 +1,113 @@
-const mongoose = require("mongoose");
-
+// const mongoose = require("mongoose");
 
 // const electionSchema = new mongoose.Schema({
-//   isActive: { type: Boolean, default: false },
-//   startTime: Date,
-//   endTime: Date,
-
-//   finalResults: {
-//     totalVotes: Number,
-//     headBoyResults: [
-//       {
-//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-//          votes: Number,
-
-//       },
-//     ],
-//     headGirlResults: [
-//       {
-//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-//         votes: Number,
-//       },
-//     ],
-//     overallResults: [
-//       {
-//         candidate: { type: mongoose.Schema.Types.ObjectId, ref: "Candidate" },
-//         votes: Number,
-//       },
-//     ],  
+//   isActive: {
+//     type: Boolean,
+//     default: false,
 //   },
-//    status: {
+
+//   startTime: {
+//     type: Date,
+//     required: true,
+//   },
+
+//   endTime: {
+//     type: Date,
+//     required: true,
+//   },
+
+//   electionSession: {
+//     type: String, 
+//     required: true,
+//   },
+
+//   status: {
 //     type: String,
 //     enum: ["ONGOING", "COMPLETED"],
 //     default: "ONGOING",
 //   },
-  
+
+//   finalResults: {
+//     totalVotes: Number,
+
+//     headBoyResults: [
+//       {
+//         candidateId: mongoose.Schema.Types.ObjectId,
+//         name: String,
+//         admissionNo: String,
+//         class: String,
+//         section: String,
+//         photo: String,
+//         position: String,
+//         votes: Number,
+//       },
+//     ],
+
+//     headGirlResults: [
+//       {
+//         candidateId: mongoose.Schema.Types.ObjectId,
+//         name: String,
+//         admissionNo: String,
+//         class: String,
+//         section: String,
+//         photo: String,
+//         photo: String,
+//         position: String,
+//         votes: Number,
+//       },
+//     ],
+
+//     overallResults: [
+//       {
+//         candidateId: mongoose.Schema.Types.ObjectId,
+//         name: String,
+//         position: String,
+//         votes: Number,
+//       },
+//     ],
+//   },
+//   resultsCalculated: {
+//   type: Boolean,
+//   default: false,
+// }
+// ,
+
+//   createdAt: {
+//     type: Date,
+//     default: Date.now,
+//   },
 // });
+
+// electionSchema.index(
+//   { status: 1 },
+//   { unique: true, partialFilterExpression: { status: "ONGOING" } }
+// );
+
+
+// const Election = mongoose.model("Election", electionSchema);
+// module.exports = Election;
+
+
+const mongoose = require("mongoose");
+
+const resultSnapshotSchema = new mongoose.Schema(
+  {
+    candidateId: mongoose.Schema.Types.ObjectId,
+    name: String,
+    rollNumber: String,
+    class: String,
+    gender: String,
+    position: String,
+    profilePhoto: String,
+    partySymbol: String,
+    campaignVideo: String,
+    achievements: [String],
+    initiatives: [String],
+    votes: Number,
+    rank: Number,
+  },
+  { _id: false }
+);
 
 const electionSchema = new mongoose.Schema({
   isActive: {
@@ -53,7 +126,7 @@ const electionSchema = new mongoose.Schema({
   },
 
   electionSession: {
-    type: String, 
+    type: String, // e.g. "2025–2026"
     required: true,
   },
 
@@ -64,34 +137,14 @@ const electionSchema = new mongoose.Schema({
   },
 
   finalResults: {
-    totalVotes: Number,
+    totalVotes: {
+      type: Number,
+      required: true,
+    },
 
-    headBoyResults: [
-      {
-        candidateId: mongoose.Schema.Types.ObjectId,
-        name: String,
-        admissionNo: String,
-        class: String,
-        section: String,
-        photo: String,
-        position: String,
-        votes: Number,
-      },
-    ],
+    headBoyResults: [resultSnapshotSchema],
 
-    headGirlResults: [
-      {
-        candidateId: mongoose.Schema.Types.ObjectId,
-        name: String,
-        admissionNo: String,
-        class: String,
-        section: String,
-        photo: String,
-        photo: String,
-        position: String,
-        votes: Number,
-      },
-    ],
+    headGirlResults: [resultSnapshotSchema],
 
     overallResults: [
       {
@@ -99,26 +152,20 @@ const electionSchema = new mongoose.Schema({
         name: String,
         position: String,
         votes: Number,
+        rank: Number,
       },
     ],
   },
+
   resultsCalculated: {
-  type: Boolean,
-  default: false,
-}
-,
+    type: Boolean,
+    default: false,
+  },
 
   createdAt: {
     type: Date,
     default: Date.now,
   },
 });
-
-electionSchema.index(
-  { status: 1 },
-  { unique: true, partialFilterExpression: { status: "ONGOING" } }
-);
-
-
 const Election = mongoose.model("Election", electionSchema);
 module.exports = Election;
