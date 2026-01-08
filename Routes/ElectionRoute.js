@@ -198,10 +198,21 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without results
+   
+   console.log("Mongo DB:", mongoose.connection.name);
+    console.log("Election query filter:", {
+  status: "COMPLETED",
+  resultsCalculated: false,
+});
+
     const election = await Election.findOne({
-      status: "COMPLETED",
-      resultsCalculated: false,
-    }).sort({ endTime: -1 });
+  status: "COMPLETED",
+  $or: [
+    { resultsCalculated: false },
+    { resultsCalculated: { $exists: false } },
+  ],
+}).sort({ endTime: -1 });
+
     console.log("Calculating results for election:", election);
 
     if (!election) {

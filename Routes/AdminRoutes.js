@@ -149,8 +149,6 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 
   await candidate.deleteMany({});
 
-
-
     return res.json({
       success: true,
       message:
