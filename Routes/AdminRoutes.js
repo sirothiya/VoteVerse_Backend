@@ -144,8 +144,7 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
     admin.electionLocked = false;
     await admin.save();
 
-    await User.updateMany({}, { isVoted: false });
-    
+    await User.updateMany({}, { isVoted: false, votesCast: { headBoy: false, headGirl: false } });
 
   await candidate.deleteMany({});
 
