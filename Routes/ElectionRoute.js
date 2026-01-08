@@ -199,7 +199,6 @@ router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without results
    
-   console.log("Mongo DB:", mongoose.connection.name);
     console.log("Election query filter:", {
   status: "COMPLETED",
   resultsCalculated: false,
