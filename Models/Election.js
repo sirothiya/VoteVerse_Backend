@@ -139,7 +139,6 @@ const electionSchema = new mongoose.Schema({
   finalResults: {
     totalVotes: {
       type: Number,
-      required: true,
     },
 
     headBoyResults: [resultSnapshotSchema],
