@@ -195,6 +195,8 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 //   await election.save();
 //   return res.json({ success: true, election: election.finalResults });
 // });
+
+
 router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without result
@@ -363,7 +365,7 @@ router.get("/history", async (req, res) => {
   try {
     const elections = await Election.find({
       status: "COMPLETED",
-      finalResults: { $exists: true },
+      resultsCalculated: { $exists: true },
     }).sort({ endTime: -1 });
 
     return res.json(elections);
