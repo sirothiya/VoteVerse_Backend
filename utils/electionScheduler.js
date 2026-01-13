@@ -34,12 +34,13 @@ cron.schedule("* * * * *", async () => {
           status: "COMPLETED",
           isActive: false,
           endedAt: now,
+          resultsCalculated:false
         },
       },
       { new: true, session }
     );
 
-    if (!election) {
+    if (!election || election.resultsCalculated === true) {
       await session.abortTransaction();
       return;
     }
@@ -64,10 +65,7 @@ cron.schedule("* * * * *", async () => {
 
     await session.commitTransaction();
     console.log("✅ Election marked COMPLETED");
-    await Election.updateOne(
-  { _id: election._id },
-  { $set: { resultsCalculated: false } }
-);
+    
 
 
   } catch (err) {

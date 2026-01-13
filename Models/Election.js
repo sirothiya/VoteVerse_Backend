@@ -17,7 +17,7 @@
 //   },
 
 //   electionSession: {
-//     type: String, 
+//     type: String,
 //     required: true,
 //   },
 
@@ -83,10 +83,8 @@
 //   { unique: true, partialFilterExpression: { status: "ONGOING" } }
 // );
 
-
 // const Election = mongoose.model("Election", electionSchema);
 // module.exports = Election;
-
 
 const mongoose = require("mongoose");
 
@@ -123,6 +121,9 @@ const electionSchema = new mongoose.Schema({
   endTime: {
     type: Date,
     required: true,
+  },
+  endedAt: {
+    type: Date,
   },
 
   electionSession: {

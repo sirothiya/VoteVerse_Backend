@@ -89,7 +89,7 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
     //   status: "ONGOING",
     //   isActive: true,
     // });
-    const election =await getActiveElection();
+    const election = await getActiveElection();
 
     if (!election) {
       return res.status(400).json({ message: "No active election" });
@@ -196,21 +196,24 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 //   return res.json({ success: true, election: election.finalResults });
 // });
 
-
 router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without result
-const election = await Election.findOne({
-  status: "COMPLETED",
-  resultsCalculated: false,
-}).sort({ endTime: -1 });
-
+    const election = await Election.findOne({
+      status: "COMPLETED",
+      resultsCalculated: false,
+    }).sort({ endTime: -1 });
 
     console.log("Calculating results for election:", election);
 
     if (!election) {
       return res.status(400).json({
         message: "No completed election pending result calculation",
+      });
+    }
+    if (election.resultsCalculated) {
+      return res.status(400).json({
+        message: "Results already calculated",
       });
     }
 
@@ -221,15 +224,14 @@ const election = await Election.findOne({
     }).lean();
 
     if (!candidates.length) {
-  election.resultsCalculated = true; // ✅ mark as done
-  await election.save();
+      election.resultsCalculated = true; // ✅ mark as done
+      await election.save();
 
-  return res.status(400).json({
-    message: "Election completed but no candidates found",
-  });
-}
+      return res.status(400).json({
+        message: "Election completed but no candidates found",
+      });
+    }
 
-    
     // const snapshot = (c) => ({
     //   candidateId: c._id,
     //   name: c.name,
@@ -239,7 +241,6 @@ const election = await Election.findOne({
     //   votes: c.voteCount,
     // });
 
-  
     // const headBoyResults = candidates
     //   .filter((c) => c.position === "Head Boy")
     //   .map(snapshot)
@@ -250,15 +251,12 @@ const election = await Election.findOne({
     //   .map(snapshot)
     //   .sort((a, b) => b.votes - a.votes);
 
-   
     // const overallResults = candidates
     //   .map(snapshot)
     //   .sort((a, b) => b.votes - a.votes);
 
-    
     // const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
 
-    
     // election.finalResults = {
     //   totalVotes,
     //   headBoyResults,
@@ -269,64 +267,58 @@ const election = await Election.findOne({
     // await election.save();
 
     const snapshot = (c, rank) => ({
-  candidateId: c._id,
-  name: c.name,
-  rollNumber: c.rollNumber,
-  class: c.class,
-  gender: c.gender,
-  position: c.position,
-  profilePhoto: c.profilePhoto,
-  partySymbol: c.partysymbol,
-  campaignVideo: c.campaignVideo,
-  achievements: c.achievements,
-  initiatives: c.initiatives,
-  votes: c.voteCount,
-  rank, // 👈 THIS IS THE KEY
-});
-
+      candidateId: c._id,
+      name: c.name,
+      rollNumber: c.rollNumber,
+      class: c.class,
+      gender: c.gender,
+      position: c.position,
+      profilePhoto: c.profilePhoto,
+      partySymbol: c.partysymbol,
+      campaignVideo: c.campaignVideo,
+      achievements: c.achievements,
+      initiatives: c.initiatives,
+      votes: c.voteCount,
+      rank, // 👈 THIS IS THE KEY
+    });
 
     // 3️⃣ Separate by position
-const headBoys = candidates.filter(c => c.position === "Head Boy");
-const headGirls = candidates.filter(c => c.position === "Head Girl");
+    const headBoys = candidates.filter((c) => c.position === "Head Boy");
+    const headGirls = candidates.filter((c) => c.position === "Head Girl");
 
-// 4️⃣ Sort by votes (DESC)
-headBoys.sort((a, b) => b.voteCount - a.voteCount);
-headGirls.sort((a, b) => b.voteCount - a.voteCount);
+    // 4️⃣ Sort by votes (DESC)
+    headBoys.sort((a, b) => b.voteCount - a.voteCount);
+    headGirls.sort((a, b) => b.voteCount - a.voteCount);
 
-// 5️⃣ Create ranked snapshots
-const headBoyResults = headBoys.map((c, index) =>
-  snapshot(c, index + 1)
-);
+    // 5️⃣ Create ranked snapshots
+    const headBoyResults = headBoys.map((c, index) => snapshot(c, index + 1));
 
-const headGirlResults = headGirls.map((c, index) =>
-  snapshot(c, index + 1)
-);
+    const headGirlResults = headGirls.map((c, index) => snapshot(c, index + 1));
 
-// 6️⃣ Overall results (ranked globally)
-const overallResults = [...candidates]
-  .sort((a, b) => b.voteCount - a.voteCount)
-  .map((c, index) => ({
-    candidateId: c._id,
-    name: c.name,
-    position: c.position,
-    votes: c.voteCount,
-    rank: index + 1,
-  }));
+    // 6️⃣ Overall results (ranked globally)
+    const overallResults = [...candidates]
+      .sort((a, b) => b.voteCount - a.voteCount)
+      .map((c, index) => ({
+        candidateId: c._id,
+        name: c.name,
+        position: c.position,
+        votes: c.voteCount,
+        rank: index + 1,
+      }));
 
-// 7️⃣ Total votes
-const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
+    // 7️⃣ Total votes
+    const totalVotes = candidates.reduce((sum, c) => sum + c.voteCount, 0);
 
-// 8️⃣ Freeze results
-election.finalResults = {
-  totalVotes,
-  headBoyResults,
-  headGirlResults,
-  overallResults,
-};
+    // 8️⃣ Freeze results
+    election.finalResults = {
+      totalVotes,
+      headBoyResults,
+      headGirlResults,
+      overallResults,
+    };
 
-election.resultsCalculated = true;
-await election.save();
-
+    election.resultsCalculated = true;
+    await election.save();
 
     return res.json({
       success: true,
@@ -368,7 +360,7 @@ router.get("/history", async (req, res) => {
       status: "COMPLETED",
       resultsCalculated: true,
       "finalResults.totalVotes": { $exists: true },
-    }).sort({ endTime: -1 });
+    }).sort({ endedAt: -1 });
 
     return res.json(elections);
   } catch (err) {
