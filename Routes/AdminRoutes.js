@@ -7,7 +7,7 @@ const candidate = require("../Models/Candidate");
 const User = require("../Models/User");
 const Admin = require("../Models/Admin");
 const Election = require("../Models/Election");
-const calculateFinalResults = require("../utils/calculateFinalResults");
+const calculateFinalResults = require("../utils/calculateElectionResult");
 const { generateToken, jwtMiddleware } = require("../jwt");
 const getActiveElection = require("../utils/getActiveElection");
 
