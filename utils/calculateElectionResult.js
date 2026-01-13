@@ -17,6 +17,12 @@ async function calculateElectionResult(electionId, session = null) {
 
   if (!candidates.length) {
     election.resultsCalculated = true;
+    election.finalResults = {
+    totalVotes,
+    headBoyResults: [],
+    headGirlResults: [],
+    overallResults:[]
+  };
     await election.save({ session });
     return election;
   }
