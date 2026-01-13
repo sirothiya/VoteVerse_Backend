@@ -64,6 +64,11 @@ cron.schedule("* * * * *", async () => {
 
     await session.commitTransaction();
     console.log("✅ Election marked COMPLETED");
+    await Election.updateOne(
+  { _id: election._id },
+  { $set: { resultsCalculated: false } }
+);
+
 
   } catch (err) {
     await session.abortTransaction();

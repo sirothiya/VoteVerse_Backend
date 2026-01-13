@@ -200,14 +200,11 @@ router.post("/vote/:candidateId", jwtMiddleware, async (req, res) => {
 router.get("/calculate-result", async (req, res) => {
   try {
     // 1️⃣ Find latest COMPLETED election without result
-
-    const election = await Election.findOne({
+const election = await Election.findOne({
   status: "COMPLETED",
-  $or: [
-    { resultsCalculated: false },
-    { resultsCalculated: { $exists: false } },
-  ],
+  resultsCalculated: false,
 }).sort({ endTime: -1 });
+
 
     console.log("Calculating results for election:", election);
 
@@ -223,10 +220,14 @@ router.get("/calculate-result", async (req, res) => {
       status: "Approved",
     }).lean();
 
-    console.log("Candidates found:", candidates.length);
     if (!candidates.length) {
-      return res.status(400).json({ message: "No candidates found" });
-    }
+  election.resultsCalculated = true; // ✅ mark as done
+  await election.save();
+
+  return res.status(400).json({
+    message: "Election completed but no candidates found",
+  });
+}
 
     
     // const snapshot = (c) => ({
@@ -365,7 +366,8 @@ router.get("/history", async (req, res) => {
   try {
     const elections = await Election.find({
       status: "COMPLETED",
-      resultsCalculated: { $exists: true },
+      resultsCalculated: true,
+      "finalResults.totalVotes": { $exists: true },
     }).sort({ endTime: -1 });
 
     return res.json(elections);
