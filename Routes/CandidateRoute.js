@@ -213,11 +213,8 @@ router.get("/", async (req, res) => {
 router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const activeElection = await getActiveElection();
-    const candidate = await Candidate.findOne({
-      rollNumber,
-      election: activeElection._id,
-    });
+    const candidate = await Candidate.findOne({ rollNumber }).populate("election");
+
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
@@ -237,11 +234,8 @@ router.get(
   async (req, res) => {
     try {
       const rollNumber = req.params.rollNumber;
-      const activeElection = await getActiveElection();
-      let candidate = await Candidate.findOne({
-        rollNumber,
-        election: activeElection._id,
-      });
+      const candidate = await Candidate.findOne({ rollNumber });
+
       // 'let' since we might reassign
 
       if (!candidate) {
@@ -338,6 +332,12 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
 
     // Find the candidate
     const activeElection = await getActiveElection();
+    if(!activeElection){
+      return res.status(400).json({
+        success: false,
+        message: "No active election found.",
+      });
+    }
     const candidate = await Candidate.findOneAndDelete({
       rollNumber,
       election: activeElection._id,
