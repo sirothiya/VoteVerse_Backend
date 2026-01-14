@@ -115,6 +115,9 @@ router.post("/candidateLogin", async (req, res) => {
     // this new line is being added..
     // const election = await Election.findOne({ isActive: true });
     const election = await getActiveElection();
+    if(!election){
+      return  res.status(401).json({ error: "No active election found" });
+    }
     const can = await Candidate.findOne({
       rollNumber,
       election: election._id,
