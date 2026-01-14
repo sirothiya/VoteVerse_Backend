@@ -108,56 +108,96 @@ router.post("/candidateSignup", async (req, res) => {
   }
 });
 
+// router.post("/candidateLogin", async (req, res) => {
+//   try {
+//     const { rollNumber, password } = req.body;
+
+//     const election = await getActiveElection();
+//     if(!election){
+//       return  res.status(401).json({ error: "No active election found" });
+//     }
+//     const can = await Candidate.findOne({
+//       rollNumber,
+//       election: election._id,
+//     });
+
+//     console.log("11");
+//     if (!can) {
+//       return res
+//         .status(401)
+//         .json({ error: "candidate not found, please signup" });
+//     }
+//     if (!can || !(await can.comparePassword(password))) {
+//       return res.status(401).json({ error: "Invalid rollnumber or password" });
+//     }
+//     console.log("111");
+//     const payload = {
+//       id: can.id,
+//       rollNumber: can.rollNumber,
+//     };
+//     console.log("1111");
+//     const token = generateToken(payload);
+//     console.log("11111");
+//     return res.status(200).json({
+//       message: "Canidate login successfull",
+//       Candidate: {
+//         id: can.id,
+//         name: can.name,
+//         rollNumber: can.rollNumber,
+//         class: can.class,
+//         dob: can.dob,
+//         gender: can.gender,
+//         position: can.position,
+//       },
+//       token,
+//     });
+//   } catch (err) {
+//     console.error("Error logging in user:", err);
+//     return res.status(500).json({ error: "Internal server error" });
+//   }
+// });
 router.post("/candidateLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
-    console.log("1");
-    // this new line is being added..
-    // const election = await Election.findOne({ isActive: true });
-    const election = await getActiveElection();
-    if(!election){
-      return  res.status(401).json({ error: "No active election found" });
+
+    // 🔑 Find candidate WITHOUT election filter
+    const candidate = await Candidate.findOne({ rollNumber }).populate(
+      "election"
+    );
+
+    if (!candidate) {
+      return res.status(401).json({ error: "Candidate not found" });
     }
-    const can = await Candidate.findOne({
-      rollNumber,
-      election: election._id,
+
+    const isMatch = await candidate.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid roll number or password" });
+    }
+
+    const token = generateToken({
+      id: candidate._id,
+      rollNumber: candidate.rollNumber,
     });
 
-    console.log("11");
-    if (!can) {
-      return res
-        .status(401)
-        .json({ error: "candidate not found, please signup" });
-    }
-    if (!can || !(await can.comparePassword(password))) {
-      return res.status(401).json({ error: "Invalid rollnumber or password" });
-    }
-    console.log("111");
-    const payload = {
-      id: can.id,
-      rollNumber: can.rollNumber,
-    };
-    console.log("1111");
-    const token = generateToken(payload);
-    console.log("11111");
     return res.status(200).json({
-      message: "Canidate login successfull",
-      Candidate: {
-        id: can.id,
-        name: can.name,
-        rollNumber: can.rollNumber,
-        class: can.class,
-        dob: can.dob,
-        gender: can.gender,
-        position: can.position,
-      },
+      message: "Candidate login successful",
       token,
+      candidate: {
+        id: candidate._id,
+        name: candidate.name,
+        rollNumber: candidate.rollNumber,
+        class: candidate.class,
+        position: candidate.position,
+        electionStatus: candidate.election.status, // ⭐ KEY
+        electionId: candidate.election._id,
+      },
     });
   } catch (err) {
-    console.error("Error logging in user:", err);
+    console.error(err);
     return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 router.get("/", async (req, res) => {
   try {
     const candidate = await Candidate.find();
