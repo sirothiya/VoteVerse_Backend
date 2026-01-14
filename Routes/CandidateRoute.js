@@ -161,10 +161,11 @@ router.post("/candidateLogin", async (req, res) => {
     const { rollNumber, password } = req.body;
 
     // 🔑 Find candidate WITHOUT election filter
+    console.log("Attempting login for roll number:", rollNumber);
     const candidate = await Candidate.findOne({ rollNumber }).populate(
       "election"
     );
-
+    console.log("Candidate found:", candidate); // Debug log
     if (!candidate) {
       return res.status(401).json({ error: "Candidate not found" });
     }
