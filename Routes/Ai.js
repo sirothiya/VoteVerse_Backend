@@ -1,12 +1,12 @@
-import express from "express";
-import fetch from "node-fetch";
+const express = require("express");
+const fetch = require("node-fetch");
 
 const router = express.Router();
 
 router.post("/chat", async (req, res) => {
   const { message, context } = req.body;
 
- const SYSTEM_PROMPT = `
+  const SYSTEM_PROMPT = `
 You are a SCHOOL ELECTION INFORMATION ASSISTANT.
 
 Rules:
@@ -19,7 +19,8 @@ Rules:
 Your goal:
 Help students understand the election process and candidates so they can make their own decisions.
 `;
-const prompt = `
+
+  const prompt = `
 ${SYSTEM_PROMPT}
 
 Election Data:
@@ -28,7 +29,6 @@ ${JSON.stringify(context)}
 Student Question:
 ${message}
 `;
-
 
   try {
     const hfRes = await fetch(
@@ -51,10 +51,11 @@ ${message}
         "I’m unable to answer that right now.",
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
       reply: "AI service is temporarily unavailable.",
     });
   }
 });
 
-export default router;
+module.exports = router;
