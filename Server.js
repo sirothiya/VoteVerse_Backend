@@ -25,11 +25,13 @@ const userRoute = require("./Routes/UserRoute");
 const geminiRoute = require("./Routes/Gemini");
 const AdminRoute=require("./Routes/AdminRoutes")
 const ElectionRoute=require("./Routes/ElectionRoute")
+const AI=require("./Routes/Ai")
 app.use("/candidate", candidateRoute);
 app.use("/user", userRoute);
 app.use("/gemini", geminiRoute);
 app.use("/admin",AdminRoute)
 app.use("/election",ElectionRoute)
+app.use("/api/ai",AI)
 app.use("/uploads", express.static(path.resolve(__dirname, "uploads")));
 
 
