@@ -1,10 +1,13 @@
 const express = require("express");
 const fetch = require("node-fetch");
+const buildElectionContext = require("../utils/buildElectionContext");
 
 const router = express.Router();
 
 router.post("/chat", async (req, res) => {
-  const { message, context } = req.body;
+  const { message } = req.body;
+
+  const context = await buildElectionContext();
 
   const SYSTEM_PROMPT = `
 You are a SCHOOL ELECTION INFORMATION ASSISTANT.
@@ -12,19 +15,16 @@ You are a SCHOOL ELECTION INFORMATION ASSISTANT.
 Rules:
 - You are neutral and unbiased
 - You do NOT suggest or recommend candidates
-- You answer ONLY using the provided election data
-- Use simple, respectful language for school students
-- If a question asks for opinions or predictions, politely refuse
-
-Your goal:
-Help students understand the election process and candidates so they can make their own decisions.
+- Answer ONLY from election data
+- If user asks opinion, say you cannot answer
+- Use simple student-friendly language
 `;
 
   const prompt = `
 ${SYSTEM_PROMPT}
 
 Election Data:
-${JSON.stringify(context)}
+${JSON.stringify(context, null, 2)}
 
 Student Question:
 ${message}
@@ -46,15 +46,11 @@ ${message}
     const data = await hfRes.json();
 
     res.json({
-      reply:
-        data?.[0]?.generated_text ||
-        "I’m unable to answer that right now.",
+      reply: data?.[0]?.generated_text || "I cannot find that information.",
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      reply: "AI service is temporarily unavailable.",
-    });
+    console.error("AI ERROR:", err);
+    res.status(500).json({ reply: "AI service down." });
   }
 });
 
