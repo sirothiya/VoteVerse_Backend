@@ -175,7 +175,12 @@ const candidateSchema = new mongoose.Schema({
     required: true,
   },
 
-  manifesto: String,
+  manifesto: {
+  pdfPath: String,
+  originalPdfName: String,
+  extractedText: String, 
+},
+
   campaignVideo: String,
   achievements: [String],
   initiatives: [String],

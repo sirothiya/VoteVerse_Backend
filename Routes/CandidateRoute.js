@@ -4,6 +4,7 @@ const router = express.Router();
 const Candidate = require("../Models/Candidate");
 const Election = require("../Models/Election");
 const { generateToken, jwtMiddleware } = require("../jwt");
+const extractPdfText=require("../utils/extractPdfText");
 
 // ------------------ File Upload Setup ------------------
 const fs = require("fs");
@@ -108,54 +109,7 @@ router.post("/candidateSignup", async (req, res) => {
   }
 });
 
-// router.post("/candidateLogin", async (req, res) => {
-//   try {
-//     const { rollNumber, password } = req.body;
 
-//     const election = await getActiveElection();
-//     if(!election){
-//       return  res.status(401).json({ error: "No active election found" });
-//     }
-//     const can = await Candidate.findOne({
-//       rollNumber,
-//       election: election._id,
-//     });
-
-//     console.log("11");
-//     if (!can) {
-//       return res
-//         .status(401)
-//         .json({ error: "candidate not found, please signup" });
-//     }
-//     if (!can || !(await can.comparePassword(password))) {
-//       return res.status(401).json({ error: "Invalid rollnumber or password" });
-//     }
-//     console.log("111");
-//     const payload = {
-//       id: can.id,
-//       rollNumber: can.rollNumber,
-//     };
-//     console.log("1111");
-//     const token = generateToken(payload);
-//     console.log("11111");
-//     return res.status(200).json({
-//       message: "Canidate login successfull",
-//       Candidate: {
-//         id: can.id,
-//         name: can.name,
-//         rollNumber: can.rollNumber,
-//         class: can.class,
-//         dob: can.dob,
-//         gender: can.gender,
-//         position: can.position,
-//       },
-//       token,
-//     });
-//   } catch (err) {
-//     console.error("Error logging in user:", err);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// });
 router.post("/candidateLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
@@ -293,8 +247,28 @@ router.post(
       if (req.files?.partysymbol)
         candidate.partysymbol = `/uploads/others/${req.files.partysymbol[0].filename}`;
 
-      if (req.files?.manifesto)
-        candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`;
+      // if (req.files?.manifesto)
+      //   candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`;
+
+      if (req.files?.manifesto) {
+  const manifestoFile = req.files.manifesto[0];
+
+  const filePath = path.join(
+    __dirname,
+    "..",
+    "uploads/manifestos",
+    manifestoFile.filename
+  );
+
+  const pdfBuffer = fs.readFileSync(filePath);
+  const extractedText = await extractPdfText(pdfBuffer);
+
+  candidate.manifesto = {
+    pdfPath: `/uploads/manifestos/${manifestoFile.filename}`,
+    originalPdfName: manifestoFile.originalname,
+    extractedText: extractedText,
+  };
+}
 
       candidate.achievements = req.body.achievements
         ? JSON.parse(req.body.achievements)
