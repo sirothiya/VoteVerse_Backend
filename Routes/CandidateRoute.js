@@ -253,22 +253,13 @@ router.post(
       if (req.files?.manifesto) {
   const manifestoFile = req.files.manifesto[0];
 
-  const filePath = path.join(
-    __dirname,
-    "..",
-    "uploads/manifestos",
-    manifestoFile.filename
-  );
-
-  const pdfBuffer = fs.readFileSync(filePath);
-  const extractedText = await extractPdfText(pdfBuffer);
-
   candidate.manifesto = {
     pdfPath: `/uploads/manifestos/${manifestoFile.filename}`,
     originalPdfName: manifestoFile.originalname,
-    extractedText: extractedText,
+    extractedText: "",   // extracted later
   };
 }
+
 
       candidate.achievements = req.body.achievements
         ? JSON.parse(req.body.achievements)
@@ -299,6 +290,46 @@ router.post(
     }
   }
 );
+
+
+// routes/manifestoRoute.js
+router.post("/extract/manifesto/:rollNumber", async (req, res) => {
+  try {
+    const candidate = await Candidate.findOne({ rollNumber });
+
+    // 🔐 Security checks
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    if (req.user.rollNumber !== rollNumber) {
+      return res.status(403).json({ message: "Unauthorized" });
+    }
+
+    if (!candidate.isApproved) {
+      return res.status(400).json({ message: "Profile not approved yet" });
+    }
+
+    if (candidate.manifesto?.extractedText) {
+      return res.status(400).json({ message: "Already extracted" });
+    }
+
+    // 🧠 Extract
+    const text = await extractPdfText(candidate.manifesto.pdfPath);
+
+    candidate.manifesto.extractedText = text;
+    await candidate.save();
+
+    res.json({ message: "Manifesto extracted successfully" });
+
+  } catch (err) {
+    console.error("Manifesto extraction failed:", err);
+    res.status(500).json({ message: "Extraction failed" });
+  }
+});
+
+
+
 
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
