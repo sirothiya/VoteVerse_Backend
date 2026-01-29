@@ -293,7 +293,7 @@ router.post(
 );
 
 
-router.post("/extract/manifesto/:rollNumber", async (req, res) => {
+router.post("/extract/manifesto/:rollNumber", jwtMiddleware, async (req, res) => {
   let candidate; // <-- important for logging
   try {
     const rollNumber = req.params.rollNumber;
