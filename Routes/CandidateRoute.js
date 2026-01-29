@@ -308,10 +308,6 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
 
     console.log("📄 Manifesto path:", candidate.manifesto?.pdfPath);
 
-    if (candidate.status !== "Approved") {
-      return res.status(400).json({ message: "Profile not approved yet" });
-    }
-
     if (!candidate.manifesto?.pdfPath) {
       throw new Error("Manifesto PDF path is missing");
     }
