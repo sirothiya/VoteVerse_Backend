@@ -1,6 +1,5 @@
 const express = require("express");
 const router = express.Router();
-const fs = require("fs");
 
 const Candidate = require("../Models/Candidate");
 const Election = require("../Models/Election");
