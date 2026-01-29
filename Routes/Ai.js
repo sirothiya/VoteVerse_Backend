@@ -5,20 +5,19 @@ const router = express.Router();
 router.post("/summarize", async (req, res) => {
   const { text } = req.body;
 
+  if (!text || text.trim().length < 30) {
+    return res.json({
+      summary: "Manifesto text is too short to summarize"
+    });
+  }
+
   const prompt = `
-You are a SCHOOL ELECTION MANIFESTO EXPLAINER.
+Convert the following school election manifesto into clear bullet points.
+Use simple language.
+Do not add new information.
 
-Rules:
-- Use ONLY the text given
-- Convert into bullet points
-- Simple language
-- Neutral tone
-- No new promises
-
-Manifesto Text:
-"""
+Text:
 ${text}
-"""
 `;
 
   const response = await fetch(
@@ -34,10 +33,15 @@ ${text}
   );
 
   const data = await response.json();
+  console.log("🧠 HF raw response:", data);
 
-  res.json({
-    summary: data?.[0]?.generated_text || "Unable to summarize manifesto",
-  });
+  let summary =
+    data?.[0]?.generated_text ||
+    data?.generated_text ||
+    data?.[0]?.summary_text ||
+    "AI could not generate summary at this time";
+
+  res.json({ summary });
 });
 
 module.exports = router;
