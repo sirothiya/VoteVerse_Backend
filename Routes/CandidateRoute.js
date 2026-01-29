@@ -312,7 +312,7 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
       throw new Error("Manifesto PDF path is missing");
     }
 
-    const pdfUrl = `https://voteverse-backend-new.onrender.com/${candidate.manifesto.pdfPath}`;
+    const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
     console.log("🌐 Fetching PDF from:", pdfUrl);
 
     const response = await axios.get(pdfUrl, {
