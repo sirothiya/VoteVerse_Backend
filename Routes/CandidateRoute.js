@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const fs = require("fs");
 
 const Candidate = require("../Models/Candidate");
 const Election = require("../Models/Election");
@@ -292,12 +293,13 @@ router.post(
 );
 
 
-// routes/manifestoRoute.js
+
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   try {
+    const { rollNumber } = req.params;
+
     const candidate = await Candidate.findOne({ rollNumber });
 
-    // 🔐 Security checks
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
@@ -306,7 +308,7 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
       return res.status(403).json({ message: "Unauthorized" });
     }
 
-    if (!candidate.isApproved) {
+    if (candidate.status !== "Approved") {
       return res.status(400).json({ message: "Profile not approved yet" });
     }
 
@@ -314,13 +316,18 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
       return res.status(400).json({ message: "Already extracted" });
     }
 
-    // 🧠 Extract
-    const text = await extractPdfText(candidate.manifesto.pdfPath);
+    // ✅ READ FILE AS BUFFER
+    const pdfBuffer = fs.readFileSync(candidate.manifesto.pdfPath);
+
+    const text = await extractPdfText(pdfBuffer);
 
     candidate.manifesto.extractedText = text;
     await candidate.save();
 
-    res.json({ message: "Manifesto extracted successfully" });
+    res.json({
+      message: "Manifesto extracted successfully",
+      extractedText: text,
+    });
 
   } catch (err) {
     console.error("Manifesto extraction failed:", err);
