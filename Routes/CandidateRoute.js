@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const axios = require("axios");
 
 const Candidate = require("../Models/Candidate");
 const Election = require("../Models/Election");
@@ -292,7 +293,7 @@ router.post(
 );
 
 
-router.post("/extract/manifesto/:rollNumber", jwtMiddleware, async (req, res) => {
+router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   let candidate; // <-- important for logging
   try {
     const rollNumber = req.params.rollNumber;
@@ -307,14 +308,6 @@ router.post("/extract/manifesto/:rollNumber", jwtMiddleware, async (req, res) =>
 
     console.log("📄 Manifesto path:", candidate.manifesto?.pdfPath);
 
-    if (!req.user) {
-      throw new Error("req.user is undefined (auth middleware missing)");
-    }
-
-    if (req.user.rollNumber !== rollNumber) {
-      return res.status(403).json({ message: "Unauthorized" });
-    }
-
     if (candidate.status !== "Approved") {
       return res.status(400).json({ message: "Profile not approved yet" });
     }
@@ -323,7 +316,7 @@ router.post("/extract/manifesto/:rollNumber", jwtMiddleware, async (req, res) =>
       throw new Error("Manifesto PDF path is missing");
     }
 
-    const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
+    const pdfUrl = `https://voteverse-backend-new.onrender.com/${candidate.manifesto.pdfPath}`;
     console.log("🌐 Fetching PDF from:", pdfUrl);
 
     const response = await axios.get(pdfUrl, {
