@@ -1,30 +1,27 @@
 const express = require("express");
 const fetch = require("node-fetch");
-const buildElectionContext = require("../utils/buildElectionContext");
-
 const router = express.Router();
-router.post("/manifesto/explain", async (req, res) => {
-  const { manifestoText } = req.body;
+
+router.post("/summarize", async (req, res) => {
+  const { text } = req.body;
 
   const prompt = `
 You are a SCHOOL ELECTION MANIFESTO EXPLAINER.
 
 Rules:
 - Use ONLY the text given
-- Do NOT add promises
-- Do NOT recommend
-- Simple bullet points
+- Convert into bullet points
+- Simple language
 - Neutral tone
+- No new promises
 
 Manifesto Text:
 """
-${manifestoText}
+${text}
 """
-
-Explain clearly for students.
 `;
 
-  const hfRes = await fetch(
+  const response = await fetch(
     "https://api-inference.huggingface.co/models/google/flan-t5-base",
     {
       method: "POST",
@@ -36,13 +33,11 @@ Explain clearly for students.
     }
   );
 
-  const data = await hfRes.json();
+  const data = await response.json();
 
   res.json({
-    reply: data?.[0]?.generated_text || "Unable to explain manifesto.",
+    summary: data?.[0]?.generated_text || "Unable to summarize manifesto",
   });
 });
-
-
 
 module.exports = router;

@@ -5,7 +5,7 @@ const axios = require("axios");
 const Candidate = require("../Models/Candidate");
 const Election = require("../Models/Election");
 const { generateToken, jwtMiddleware } = require("../jwt");
-const extractPdfText=require("../utils/extractPdfText");
+const extractPdfText = require("../utils/extractPdfText");
 
 // ------------------ File Upload Setup ------------------
 const fs = require("fs");
@@ -110,7 +110,6 @@ router.post("/candidateSignup", async (req, res) => {
   }
 });
 
-
 router.post("/candidateLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
@@ -118,7 +117,7 @@ router.post("/candidateLogin", async (req, res) => {
     // 🔑 Find candidate WITHOUT election filter
     console.log("Attempting login for roll number:", rollNumber);
     const candidate = await Candidate.findOne({ rollNumber }).populate(
-      "election"
+      "election",
     );
     console.log("Candidate found:", candidate); // Debug log
     if (!candidate) {
@@ -169,8 +168,9 @@ router.get("/", async (req, res) => {
 router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
-    const candidate = await Candidate.findOne({ rollNumber }).populate("election");
-
+    const candidate = await Candidate.findOne({ rollNumber }).populate(
+      "election",
+    );
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
@@ -204,7 +204,7 @@ router.get(
         .status(500)
         .json({ message: "Error checking profile", error: err.message });
     }
-  }
+  },
 );
 
 router.post(
@@ -252,15 +252,14 @@ router.post(
       //   candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`;
 
       if (req.files?.manifesto) {
-  const manifestoFile = req.files.manifesto[0];
+        const manifestoFile = req.files.manifesto[0];
 
-  candidate.manifesto = {
-    pdfPath: `/uploads/manifestos/${manifestoFile.filename}`,
-    originalPdfName: manifestoFile.originalname,
-    extractedText: "",   // extracted later
-  };
-}
-
+        candidate.manifesto = {
+          pdfPath: `/uploads/manifestos/${manifestoFile.filename}`,
+          originalPdfName: manifestoFile.originalname,
+          extractedText: "", // extracted later
+        };
+      }
 
       candidate.achievements = req.body.achievements
         ? JSON.parse(req.body.achievements)
@@ -289,9 +288,8 @@ router.post(
         error: err.message,
       });
     }
-  }
+  },
 );
-
 
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   let candidate; // <-- important for logging
@@ -325,13 +323,24 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
     console.log("🧠 Extracted text length:", text.length);
 
     candidate.manifesto.extractedText = text;
+
+    const aiRes = await fetch("https://voteverse-backend-new.onrender.com/api/ai/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text }),
+    });
+
+    const aiData = await aiRes.json();
+
+    candidate.manifesto.summary = aiData.summary;
+    console.log("📝 Manifesto summary length:", aiData.summary.length);
     await candidate.save();
 
     return res.json({
       message: "Manifesto extracted successfully",
       extractedText: text,
+      summary: aiData.summary,
     });
-
   } catch (err) {
     console.error("❌ EXTRACTION FAILED");
     console.error("Reason:", err.message);
@@ -345,8 +354,6 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   }
 });
 
-
-
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
@@ -354,7 +361,7 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
 
     // Find the candidate
     const activeElection = await getActiveElection();
-    if(!activeElection){
+    if (!activeElection) {
       return res.status(400).json({
         success: false,
         message: "No active election found.",
@@ -413,6 +420,5 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
     });
   }
 });
-
 
 module.exports = router;
