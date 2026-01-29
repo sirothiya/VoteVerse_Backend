@@ -2,6 +2,7 @@ const express = require("express");
 const fetch = require("node-fetch");
 const router = express.Router();
 
+
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -13,23 +14,15 @@ router.post("/summarize", async (req, res) => {
     }
 
     const prompt = `
-You are a SCHOOL ELECTION MANIFESTO EXPLAINER.
+Summarize the following school election manifesto into simple bullet points.
+Use only the given text. No new promises.
 
-Rules:
-- Use ONLY the text given
-- Convert into bullet points
-- Simple language
-- Neutral tone
-- No new promises
-
-Manifesto Text:
-"""
+Text:
 ${text}
-"""
 `;
 
     const hfResponse = await fetch(
-      "https://router.huggingface.co/hf-inference/models/google/flan-t5-base",
+      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
       {
         method: "POST",
         headers: {
@@ -40,27 +33,17 @@ ${text}
       }
     );
 
-    const rawText = await hfResponse.text(); // 👈 IMPORTANT
-    console.log("🧠 HF RAW TEXT:", rawText);
-
-    // Try parsing JSON safely
-    let data;
-    try {
-      data = JSON.parse(rawText);
-    } catch {
-      return res.json({
-        summary: "AI service is temporarily unavailable. Please try again.",
-      });
-    }
+    const data = await hfResponse.json();
+    console.log("🧠 HF RESPONSE:", data);
 
     if (data.error) {
       return res.json({
-        summary: "AI is warming up. Please try again in a few seconds.",
+        summary: "AI is warming up. Please try again shortly.",
       });
     }
 
     res.json({
-      summary: data?.[0]?.generated_text || "Unable to summarize manifesto",
+      summary: data?.[0]?.summary_text || "Unable to summarize manifesto",
     });
   } catch (err) {
     console.error("❌ AI ERROR:", err.message);
@@ -69,5 +52,6 @@ ${text}
     });
   }
 });
+
 
 module.exports = router;
