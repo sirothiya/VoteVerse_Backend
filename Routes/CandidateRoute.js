@@ -296,7 +296,7 @@ router.post(
 
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   try {
-    const { rollNumber } = req.params;
+    const { rollNumber } = req.params.rollNumber;
 
     const candidate = await Candidate.findOne({ rollNumber });
 
