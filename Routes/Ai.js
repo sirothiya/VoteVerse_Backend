@@ -3,42 +3,39 @@ const fetch = require("node-fetch");
 const router = express.Router();
 
 
+const wait = (ms) => new Promise((res) => setTimeout(res, ms));
+
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
 
-    if (!text || text.trim().length < 10) {
-      return res.json({
-        summary: "Manifesto text is too short to summarize.",
-      });
+    const callHF = async () => {
+      const response = await fetch(
+        "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${process.env.HF_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ inputs: text }),
+        }
+      );
+      return response.json();
+    };
+
+    let data = await callHF();
+
+    // ⏳ Model loading → wait & retry once
+    if (data?.error?.includes("loading")) {
+      console.log("⏳ HF model loading, retrying...");
+      await wait(8000); // wait 8 seconds
+      data = await callHF();
     }
 
-    const prompt = `
-Summarize the following school election manifesto into simple bullet points.
-Use only the given text. No new promises.
-
-Text:
-${text}
-`;
-
-    const hfResponse = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ inputs: prompt }),
-      }
-    );
-
-    const data = await hfResponse.json();
-    console.log("🧠 HF RESPONSE:", data);
-
-    if (data.error) {
+    if (data?.error) {
       return res.json({
-        summary: "AI is warming up. Please try again shortly.",
+        summary: "AI is temporarily unavailable. Try again shortly.",
       });
     }
 
@@ -48,10 +45,11 @@ ${text}
   } catch (err) {
     console.error("❌ AI ERROR:", err.message);
     res.status(500).json({
-      summary: "AI could not generate summary at this time",
+      summary: "AI service failed",
     });
   }
 });
+
 
 
 module.exports = router;
