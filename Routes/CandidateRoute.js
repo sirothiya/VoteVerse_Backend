@@ -293,15 +293,23 @@ router.post(
 );
 
 
-
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
+  let candidate; // <-- important for logging
   try {
-    const {rollNumber} = req.params;
+    const rollNumber = req.params.rollNumber;
+    console.log("➡️ Extracting manifesto for:", rollNumber);
 
-    const candidate = await Candidate.findOne({ rollNumber });
+    candidate = await Candidate.findOne({ rollNumber });
+    console.log("✅ Candidate found:", !!candidate);
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
+    }
+
+    console.log("📄 Manifesto path:", candidate.manifesto?.pdfPath);
+
+    if (!req.user) {
+      throw new Error("req.user is undefined (auth middleware missing)");
     }
 
     if (req.user.rollNumber !== rollNumber) {
@@ -312,29 +320,42 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
       return res.status(400).json({ message: "Profile not approved yet" });
     }
 
-    if (candidate.manifesto?.extractedText) {
-      return res.status(400).json({ message: "Already extracted" });
+    if (!candidate.manifesto?.pdfPath) {
+      throw new Error("Manifesto PDF path is missing");
     }
 
-    // ✅ READ FILE AS BUFFER
-    const pdfBuffer = fs.readFileSync(candidate.manifesto.pdfPath);
+    const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
+    console.log("🌐 Fetching PDF from:", pdfUrl);
 
-    const text = await extractPdfText(pdfBuffer);
+    const response = await axios.get(pdfUrl, {
+      responseType: "arraybuffer",
+    });
+
+    console.log("📦 PDF size:", response.data.byteLength);
+
+    const text = await extractPdfText(response.data);
+    console.log("🧠 Extracted text length:", text.length);
 
     candidate.manifesto.extractedText = text;
     await candidate.save();
 
-    res.json({
+    return res.json({
       message: "Manifesto extracted successfully",
       extractedText: text,
     });
 
   } catch (err) {
-    console.error("Manifesto extraction failed:", err);
-    res.status(500).json({ message: "Extraction failed" });
+    console.error("❌ EXTRACTION FAILED");
+    console.error("Reason:", err.message);
+    console.error("Stack:", err.stack);
+    console.error("Candidate:", candidate);
+
+    return res.status(500).json({
+      message: "Extraction failed",
+      error: err.message, // TEMP
+    });
   }
 });
-
 
 
 
