@@ -4,7 +4,6 @@ const router = express.Router();
 
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-const fetch = require("node-fetch");
 
 router.post("/summarize", async (req, res) => {
   try {

@@ -291,6 +291,12 @@ router.post(
   },
 );
 
+const list = [
+  "AI is warming up. Please try again.",
+  "AI model loading. Try again after some time.",
+  "Could not summarize.",
+  "AI temporarily unavailable.",
+];
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   let candidate; // <-- important for logging
   try {
@@ -324,17 +330,22 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
 
     candidate.manifesto.extractedText = text;
 
-    const aiRes = await fetch("https://voteverse-backend-new.onrender.com/api/ai/summarize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: text }),
-    });
+    const aiRes = await fetch(
+      "https://voteverse-backend-new.onrender.com/api/ai/summarize",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: text }),
+      },
+    );
 
     const aiData = await aiRes.json();
 
-    candidate.manifesto.summary = aiData.summary;
-    console.log("📝 Manifesto summary length:", aiData.summary.length);
-    await candidate.save();
+    if (!list.includes(aiData.summary)) {
+      candidate.manifesto.summary = aiData.summary;
+      console.log("📝 Manifesto summary length:", aiData.summary.length);
+      await candidate.save();
+    }
 
     return res.json({
       message: "Manifesto extracted successfully",
