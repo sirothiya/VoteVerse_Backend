@@ -2,7 +2,6 @@ const express = require("express");
 const fetch = require("node-fetch");
 const router = express.Router();
 
-
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -18,7 +17,9 @@ router.post("/summarize", async (req, res) => {
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-          "HTTP-Referer": "https://voteverse-backend-new.onrender.com" || "http://localhost:5173",
+          "HTTP-Referer":
+            "https://voteverse-backend-new.onrender.com" ||
+            "http://localhost:5173",
           "X-Title": "VoteVerse AI Summary",
         },
         body: JSON.stringify({
@@ -27,7 +28,7 @@ router.post("/summarize", async (req, res) => {
             {
               role: "system",
               content:
-                "Summarize the following election manifesto into clear, neutral bullet points using simple language.",
+                "You are an AI that summarizes election manifestos. Respond ONLY with plain bullet points. Do NOT add introductions, explanations, titles, markdown, or formatting. Use simple '-' bullets only.",
             },
             {
               role: "user",
@@ -36,7 +37,7 @@ router.post("/summarize", async (req, res) => {
           ],
           temperature: 0.3,
         }),
-      }
+      },
     );
 
     const data = await response.json();
@@ -55,7 +56,5 @@ router.post("/summarize", async (req, res) => {
     });
   }
 });
-
-
 
 module.exports = router;
