@@ -315,7 +315,13 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
     if (!candidate.manifesto?.pdfPath) {
       throw new Error("Manifesto PDF path is missing");
     }
-
+    
+    if(candidate.manifesto.summary && candidate.manifesto.summary.length > 0){
+      return res.json({
+        message: "Manifesto already summarized",
+        summary: candidate.manifesto.summary,
+      });
+    }
     const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
     console.log("🌐 Fetching PDF from:", pdfUrl);
 

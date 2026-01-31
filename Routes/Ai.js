@@ -3,59 +3,58 @@ const fetch = require("node-fetch");
 const router = express.Router();
 
 
-const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
 
-    if (!text || text.length < 30) {
+    if (!text || text.length < 50) {
       return res.json({ summary: "Text too short to summarize." });
     }
 
     const response = await fetch(
-      "https://api-inference.huggingface.co/models/facebook/bart-large-cnn",
+      "https://openrouter.ai/api/v1/chat/completions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${process.env.HF_API_KEY}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
+          "HTTP-Referer": "https://voteverse-backend-new.onrender.com" || "http://localhost:5173",
+          "X-Title": "VoteVerse AI Summary",
         },
         body: JSON.stringify({
-          inputs: text.slice(0, 2000), // 🔥 VERY IMPORTANT (HF limit)
+          model: "mistralai/mistral-7b-instruct",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Summarize the following election manifesto into clear, neutral bullet points using simple language.",
+            },
+            {
+              role: "user",
+              content: text.slice(0, 4000), // 🔥 VERY IMPORTANT
+            },
+          ],
+          temperature: 0.3,
         }),
       }
     );
 
-    const raw = await response.text(); // 👈 DO NOT .json() blindly
-    console.log("HF RAW:", raw);
+    const data = await response.json();
 
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch {
-      return res.json({
-        summary: "AI is warming up. Please try again.",
-      });
+    if (!data?.choices?.length) {
+      return res.json({ summary: "AI temporarily unavailable." });
     }
 
-    if (data?.error) {
-      return res.json({
-        summary: "AI model loading. Try again after some time.",
-      });
-    }
-
-    res.json({
-      summary: data[0]?.summary_text || "Could not summarize.",
+    return res.json({
+      summary: data.choices[0].message.content,
     });
-  } catch (err) {
-    console.error("AI ERROR:", err.message);
-    res.json({
+  } catch (error) {
+    console.error("OpenRouter Summary Error:", error.message);
+    return res.json({
       summary: "AI temporarily unavailable.",
     });
   }
 });
-
 
 
 
