@@ -13,6 +13,7 @@ const path = require("path");
 const multer = require("multer");
 const getActiveElection = require("../utils/getActiveElection");
 const { get } = require("http");
+const extractAudio = require("../utils/extractAudio");
 
 // Ensure folders exist
 [
@@ -20,6 +21,7 @@ const { get } = require("http");
   "uploads/videos",
   "uploads/photos",
   "uploads/consents",
+  "uploads/audio",
   "uploads/others",
 ].forEach((dir) => {
   const fullPath = path.join(__dirname, "..", dir);
@@ -216,6 +218,7 @@ router.post(
     { name: "profilePhoto", maxCount: 1 },
     { name: "parentalConsent", maxCount: 1 },
     { name: "partysymbol", maxCount: 1 },
+    {name : "campaignAudio", maxCount: 1}
   ]),
   async (req, res) => {
     try {
@@ -275,6 +278,20 @@ router.post(
 
       candidate.profilecompleted = true;
 
+      if (candidate.campaignVideo) {
+        const videoFullPath = path.join(
+          __dirname,
+          "..",
+          candidate.campaignVideo,
+        );
+
+        const audioPath = await extractAudio(videoFullPath);
+
+        candidate.campaignAudio = audioPath.replace(
+          path.join(__dirname, ".."),
+          "",
+        );
+      }
       await candidate.save();
 
       return res.status(200).json({
@@ -315,8 +332,8 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
     if (!candidate.manifesto?.pdfPath) {
       throw new Error("Manifesto PDF path is missing");
     }
-    
-    if(candidate.manifesto.summary && candidate.manifesto.summary.length > 0){
+
+    if (candidate.manifesto.summary && candidate.manifesto.summary.length > 0) {
       return res.json({
         message: "Manifesto already summarized",
         summary: candidate.manifesto.summary,
