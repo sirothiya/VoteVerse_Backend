@@ -57,4 +57,52 @@ router.post("/summarize", async (req, res) => {
   }
 });
 
+
+/**
+ * 🎭 SENTIMENT ANALYSIS
+ * Input: text
+ * Output: Positive | Neutral | Negative
+ */
+router.post("/sentiment", async (req, res) => {
+  try {
+    const { text } = req.body;
+
+    if (!text || text.trim().length < 10) {
+      return res.json({
+        sentiment: "Neutral",
+      });
+    }
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a sentiment classifier. Respond with ONLY ONE WORD: Positive, Neutral, or Negative.",
+        },
+        {
+          role: "user",
+          content: text,
+        },
+      ],
+      temperature: 0,
+    });
+
+    const sentiment =
+      response.choices[0].message.content.trim();
+
+    return res.json({
+      sentiment,
+    });
+  } catch (err) {
+    console.error("Sentiment AI failed:", err.message);
+
+    // 🔥 Graceful fallback
+    return res.json({
+      sentiment: "Neutral",
+    });
+  }
+});
+
 module.exports = router;

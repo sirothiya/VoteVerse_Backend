@@ -188,6 +188,9 @@ const candidateSchema = new mongoose.Schema({
   profilePhoto: String,
   partysymbol: String,
   campaignAudio:String,
+campaignVideoTranscript: String,
+campaignVideoSummary: String,
+campaignVideoSentiment: String,
 
   // 📄 Verification
   parentalConsent: String,

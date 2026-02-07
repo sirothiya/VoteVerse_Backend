@@ -14,6 +14,7 @@ const multer = require("multer");
 const getActiveElection = require("../utils/getActiveElection");
 const { get } = require("http");
 const extractAudio = require("../utils/extractAudio");
+const transcribeAudio = require("../utils/transcribeAudio");
 
 // Ensure folders exist
 [
@@ -387,6 +388,78 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
     return res.status(500).json({
       message: "Extraction failed",
       error: err.message, // TEMP
+    });
+  }
+});
+
+
+router.post("/extract/video-summary/:rollNumber", async (req, res) => {
+  try {
+    const candidate = await Candidate.findOne({ rollNumber: req.params.rollNumber });
+
+    if (!candidate || !candidate.campaignVideo) {
+      return res.json({
+        status: "NO_VIDEO",
+        message: "No campaign video uploaded",
+      });
+    }
+
+    // ⛔ Already done → reuse
+    if (candidate.campaignVideoSummary) {
+      return res.json({
+        status: "DONE",
+        summary: candidate.campaignVideoSummary,
+      });
+    }
+
+    const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
+
+    // 1️⃣ Video → Audio
+    const audioPath = await extractAudio(videoPath);
+
+    // 2️⃣ Audio → Text
+    const transcript = await transcribeAudio(audioPath);
+
+    // 3️⃣ AI summary
+    const aiRes = await fetch("https://voteverse-backend-new.onrender.com/api/ai/summarize", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: transcript }),
+    });
+
+    const aiData = await aiRes.json();
+
+    const sentimentRes = await fetch(
+  "https://voteverse-backend-new.onrender.com/api/ai/sentiment",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      text: transcript,
+    }),
+  }
+);
+
+const sentimentData = await sentimentRes.json();
+
+
+    // 4️⃣ Save ONCE
+    candidate.campaignVideoTranscript = transcript;
+    candidate.campaignVideoSummary = aiData.summary;
+    candidate.campaignVideoSentiment = sentimentData.sentiment;
+    await candidate.save();
+
+    res.json({
+      status: "SUCCESS",
+      summary: aiData.summary,
+      sentiment: sentimentData.sentiment,
+    });
+
+  } catch (err) {
+    console.error("Video AI failed:", err.message);
+    res.json({
+      status: "FAILED",
+      message: "Video could not be analyzed",
     });
   }
 });
