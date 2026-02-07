@@ -4,6 +4,8 @@ const router = express.Router();
 
 const transcribeAudio = require("../utils/transcribeAudio");
 const Candidate = require("../Models/Candidate");
+
+
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -79,11 +81,9 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
     // 🎭 SENTIMENT (OpenRouter)
     const sentiment = await sentimentWithOpenRouter(transcript);
 
-    candidate.videoAnalysis = {
-      transcript,
-      summary,
-      sentiment,
-    };
+    candidate.campaignVideoTranscript = transcript;
+    candidate.campaignVideoSummary = summary;
+    candidate.campaignVideoSentiment = sentiment;
 
     await candidate.save();
 
