@@ -314,79 +314,155 @@ const list = [
   "Could not summarize.",
   "AI temporarily unavailable.",
 ];
+
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
-  let candidate; // <-- important for logging
+  let candidate;
   try {
     const rollNumber = req.params.rollNumber;
-    console.log("➡️ Extracting manifesto for:", rollNumber);
-
     candidate = await Candidate.findOne({ rollNumber });
-    console.log("✅ Candidate found:", !!candidate);
 
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
 
-    console.log("📄 Manifesto path:", candidate.manifesto?.pdfPath);
-
     if (!candidate.manifesto?.pdfPath) {
-      throw new Error("Manifesto PDF path is missing");
-    }
-
-    if (candidate.manifesto.summary && candidate.manifesto.summary.length > 0) {
       return res.json({
-        message: "Manifesto already summarized",
-        summary: candidate.manifesto.summary,
+        status: "NO_PDF",
+        message: "No manifesto uploaded",
       });
     }
-    const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
-    console.log("🌐 Fetching PDF from:", pdfUrl);
 
-    const response = await axios.get(pdfUrl, {
-      responseType: "arraybuffer",
-    });
-
-    console.log("📦 PDF size:", response.data.byteLength);
-
-    const text = await extractPdfText(response.data);
-    console.log("🧠 Extracted text length:", text.length);
-
-    candidate.manifesto.extractedText = text;
-
-    const aiRes = await fetch(
-      "https://voteverse-backend-new.onrender.com/api/ai/summarize",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: text }),
-      },
-    );
-
-    const aiData = await aiRes.json();
-
-    if (!list.includes(aiData.summary)) {
-      candidate.manifesto.summary = aiData.summary;
-      console.log("📝 Manifesto summary length:", aiData.summary.length);
-      await candidate.save();
+    // 🔹 Step 1: Extract text
+    let extractedText = "";
+    try {
+      const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
+      const response = await axios.get(pdfUrl, { responseType: "arraybuffer" });
+      extractedText = await extractPdfText(response.data);
+      candidate.manifesto.extractedText = extractedText;
+    } catch (pdfErr) {
+      console.warn("PDF extraction failed:", pdfErr.message);
+      return res.json({
+        status: "PDF_UNSUPPORTED",
+        message:
+          "This PDF cannot be auto-explained. Please view the original document.",
+      });
     }
 
-    return res.json({
-      message: "Manifesto extracted successfully",
-      extractedText: text,
-      summary: aiData.summary,
-    });
-  } catch (err) {
-    console.error("❌ EXTRACTION FAILED");
-    console.error("Reason:", err.message);
-    console.error("Stack:", err.stack);
-    console.error("Candidate:", candidate);
+    // 🔹 Step 2: Call AI (optional)
+    let summary = "";
+    try {
+      const aiRes = await fetch(
+        "https://voteverse-backend-new.onrender.com/api/ai/summarize",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: extractedText }),
+        }
+      );
 
+      const aiData = await aiRes.json();
+      summary = aiData.summary;
+    } catch (aiErr) {
+      console.warn("AI summary failed:", aiErr.message);
+      summary = "";
+    }
+
+    // 🔹 Save what worked
+    if (summary) candidate.manifesto.summary = summary;
+    await candidate.save();
+
+    return res.json({
+      status: summary ? "SUCCESS" : "PARTIAL_SUCCESS",
+      extractedText,
+      summary,
+      message: summary
+        ? "Manifesto explained successfully"
+        : "Text extracted, but AI explanation is unavailable",
+    });
+
+  } catch (err) {
+    console.error("Hard failure:", err);
     return res.status(500).json({
-      message: "Extraction failed",
-      error: err.message, // TEMP
+      status: "ERROR",
+      message: "Something went wrong",
     });
   }
 });
+
+
+// router.post("/extract/manifesto/:rollNumber", async (req, res) => {
+//   let candidate; // <-- important for logging
+//   try {
+//     const rollNumber = req.params.rollNumber;
+//     console.log("➡️ Extracting manifesto for:", rollNumber);
+
+//     candidate = await Candidate.findOne({ rollNumber });
+//     console.log("✅ Candidate found:", !!candidate);
+
+//     if (!candidate) {
+//       return res.status(404).json({ message: "Candidate not found" });
+//     }
+
+//     console.log("📄 Manifesto path:", candidate.manifesto?.pdfPath);
+
+//     if (!candidate.manifesto?.pdfPath) {
+//       throw new Error("Manifesto PDF path is missing");
+//     }
+
+//     if (candidate.manifesto.summary && candidate.manifesto.summary.length > 0) {
+//       return res.json({
+//         message: "Manifesto already summarized",
+//         summary: candidate.manifesto.summary,
+//       });
+//     }
+//     const pdfUrl = `https://voteverse-backend-new.onrender.com${candidate.manifesto.pdfPath}`;
+//     console.log("🌐 Fetching PDF from:", pdfUrl);
+
+//     const response = await axios.get(pdfUrl, {
+//       responseType: "arraybuffer",
+//     });
+
+//     console.log("📦 PDF size:", response.data.byteLength);
+
+//     const text = await extractPdfText(response.data);
+//     console.log("🧠 Extracted text length:", text.length);
+
+//     candidate.manifesto.extractedText = text;
+
+//     const aiRes = await fetch(
+//       "https://voteverse-backend-new.onrender.com/api/ai/summarize",
+//       {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//         body: JSON.stringify({ text: text }),
+//       },
+//     );
+
+//     const aiData = await aiRes.json();
+
+//     if (!list.includes(aiData.summary)) {
+//       candidate.manifesto.summary = aiData.summary;
+//       console.log("📝 Manifesto summary length:", aiData.summary.length);
+//       await candidate.save();
+//     }
+
+//     return res.json({
+//       message: "Manifesto extracted successfully",
+//       extractedText: text,
+//       summary: aiData.summary,
+//     });
+//   } catch (err) {
+//     console.error("❌ EXTRACTION FAILED");
+//     console.error("Reason:", err.message);
+//     console.error("Stack:", err.stack);
+//     console.error("Candidate:", candidate);
+
+//     return res.status(500).json({
+//       message: "Extraction failed",
+//       error: err.message, // TEMP
+//     });
+//   }
+// });
 
 // ✅ DELETE candidate by roll number
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
