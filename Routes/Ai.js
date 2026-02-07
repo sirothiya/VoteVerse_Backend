@@ -70,15 +70,24 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
       return res.json({ error: "No audio found" });
     }
 
-    const audioPath = `.${candidate.campaignAudio}`;
+    const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
+    console.log("📹 Video path:", videoPath);
 
-    // 🎤 TRANSCRIPTION (FREE)
+    // 1️⃣ Video → Audio
+    console.log("🎵 Extracting audio...");
+    const audioPath = await extractAudio(videoPath);
+    console.log("✅ Audio extracted at:", audioPath);
+
+    // 2️⃣ Audio → Text
+    console.log("📝 Transcribing audio...");
     const transcript = await transcribeAudio(audioPath);
+    console.log("✅ Transcript length:", transcript?.length);
 
-    // 🧠 SUMMARY (OpenRouter)
+    // 3️⃣ AI summary
+    console.log("🧠 Summarizing...");
+
     const summary = await summarizeWithOpenRouter(transcript);
-
-    // 🎭 SENTIMENT (OpenRouter)
+    console.log("✅ Summary generated. Length:", summary?.length);
     const sentiment = await sentimentWithOpenRouter(transcript);
 
     candidate.campaignVideoTranscript = transcript;
