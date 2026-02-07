@@ -2,10 +2,6 @@ const express = require("express");
 const fetch = require("node-fetch");
 const router = express.Router();
 
-const transcribeAudio = require("../utils/transcribeAudio");
-const Candidate = require("../Models/Candidate");
-
-
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -62,46 +58,59 @@ router.post("/summarize", async (req, res) => {
 });
 
 
+/**
+ * 🎭 SENTIMENT ANALYSIS
+ * Input: text
+ * Output: Positive | Neutral | Negative
+ */
 
-router.post("/extract/video-summary/:rollNumber", async (req, res) => {
+
+router.post("/sentiment", async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ rollNumber: req.params.rollNumber });
-    if (!candidate?.campaignAudio) {
-      return res.json({ error: "No audio found" });
+    const { text } = req.body;
+
+    if (!text || text.trim().length < 10) {
+      return res.json({ sentiment: "Neutral" });
     }
 
-    const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
-    console.log("📹 Video path:", videoPath);
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://voteverse-backend-new.onrender.com",
+          "X-Title": "VoteVerse Sentiment",
+        },
+        body: JSON.stringify({
+          model: "mistralai/mistral-7b-instruct",
+          messages: [
+            {
+              role: "system",
+              content:
+                "Classify the sentiment of the text. Respond with only one word: Positive, Neutral, or Negative.",
+            },
+            {
+              role: "user",
+              content: text.slice(0, 3000),
+            },
+          ],
+          temperature: 0,
+        }),
+      }
+    );
 
-    // 1️⃣ Video → Audio
-    console.log("🎵 Extracting audio...");
-    const audioPath = await extractAudio(videoPath);
-    console.log("✅ Audio extracted at:", audioPath);
+    const data = await response.json();
 
-    // 2️⃣ Audio → Text
-    console.log("📝 Transcribing audio...");
-    const transcript = await transcribeAudio(audioPath);
-    console.log("✅ Transcript length:", transcript?.length);
+    const sentiment =
+      data?.choices?.[0]?.message?.content?.trim() || "Neutral";
 
-    // 3️⃣ AI summary
-    console.log("🧠 Summarizing...");
-
-    const summary = await summarizeWithOpenRouter(transcript);
-    console.log("✅ Summary generated. Length:", summary?.length);
-    const sentiment = await sentimentWithOpenRouter(transcript);
-
-    candidate.campaignVideoTranscript = transcript;
-    candidate.campaignVideoSummary = summary;
-    candidate.campaignVideoSentiment = sentiment;
-
-    await candidate.save();
-
-    res.json({ summary, sentiment });
+    return res.json({ sentiment });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Video AI failed" });
+    console.error("Sentiment AI failed:", err.message);
+    return res.json({ sentiment: "Neutral" });
   }
 });
-
 
 module.exports = router;

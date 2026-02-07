@@ -403,8 +403,6 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
         message: "No campaign video uploaded",
       });
     }
-
-    // ⛔ Already done → reuse
     if (candidate.campaignVideoSummary) {
       return res.json({
         status: "DONE",
@@ -414,13 +412,12 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
 
     const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
 
-    // 1️⃣ Video → Audio
+    
     const audioPath = await extractAudio(videoPath);
 
-    // 2️⃣ Audio → Text
+
     const transcript = await transcribeAudio(audioPath);
 
-    // 3️⃣ AI summary
     const aiRes = await fetch("https://voteverse-backend-new.onrender.com/api/ai/summarize", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -442,8 +439,6 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
 
 const sentimentData = await sentimentRes.json();
 
-
-    // 4️⃣ Save ONCE
     candidate.campaignVideoTranscript = transcript;
     candidate.campaignVideoSummary = aiData.summary;
     candidate.campaignVideoSentiment = sentimentData.sentiment;
