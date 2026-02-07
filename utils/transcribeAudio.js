@@ -1,17 +1,28 @@
-const fs = require("fs");
-const OpenAI = require("openai");
+const { spawn } = require("child_process");
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function transcribeAudio(audioPath) {
+  return new Promise((resolve, reject) => {
+    const py = spawn("python", ["transcribe.py", audioPath]);
 
-async function transcribeAudio(audioPath) {
-  const response = await openai.audio.transcriptions.create({
-    file: fs.createReadStream(audioPath),
-    model: "gpt-4o-transcribe", // or "whisper-1"
+    let transcript = "";
+    let errorOutput = "";
+
+    py.stdout.on("data", (data) => {
+      transcript += data.toString();
+    });
+
+    py.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+    });
+
+    py.on("close", (code) => {
+      if (code !== 0) {
+        reject(errorOutput);
+      } else {
+        resolve(transcript.trim());
+      }
+    });
   });
-
-  return response.text;
 }
 
 module.exports = transcribeAudio;

@@ -2,6 +2,8 @@ const express = require("express");
 const fetch = require("node-fetch");
 const router = express.Router();
 
+const transcribeAudio = require("../utils/transcribeAudio");
+const Candidate = require("../Models/Candidate");
 router.post("/summarize", async (req, res) => {
   try {
     const { text } = req.body;
@@ -58,51 +60,39 @@ router.post("/summarize", async (req, res) => {
 });
 
 
-/**
- * 🎭 SENTIMENT ANALYSIS
- * Input: text
- * Output: Positive | Neutral | Negative
- */
-router.post("/sentiment", async (req, res) => {
-  try {
-    const { text } = req.body;
 
-    if (!text || text.trim().length < 10) {
-      return res.json({
-        sentiment: "Neutral",
-      });
+router.post("/extract/video-summary/:rollNumber", async (req, res) => {
+  try {
+    const candidate = await Candidate.findOne({ rollNumber: req.params.rollNumber });
+    if (!candidate?.campaignAudio) {
+      return res.json({ error: "No audio found" });
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a sentiment classifier. Respond with ONLY ONE WORD: Positive, Neutral, or Negative.",
-        },
-        {
-          role: "user",
-          content: text,
-        },
-      ],
-      temperature: 0,
-    });
+    const audioPath = `.${candidate.campaignAudio}`;
 
-    const sentiment =
-      response.choices[0].message.content.trim();
+    // 🎤 TRANSCRIPTION (FREE)
+    const transcript = await transcribeAudio(audioPath);
 
-    return res.json({
+    // 🧠 SUMMARY (OpenRouter)
+    const summary = await summarizeWithOpenRouter(transcript);
+
+    // 🎭 SENTIMENT (OpenRouter)
+    const sentiment = await sentimentWithOpenRouter(transcript);
+
+    candidate.videoAnalysis = {
+      transcript,
+      summary,
       sentiment,
-    });
-  } catch (err) {
-    console.error("Sentiment AI failed:", err.message);
+    };
 
-    // 🔥 Graceful fallback
-    return res.json({
-      sentiment: "Neutral",
-    });
+    await candidate.save();
+
+    res.json({ summary, sentiment });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Video AI failed" });
   }
 });
+
 
 module.exports = router;
