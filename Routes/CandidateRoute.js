@@ -219,7 +219,7 @@ router.post(
     { name: "profilePhoto", maxCount: 1 },
     { name: "parentalConsent", maxCount: 1 },
     { name: "partysymbol", maxCount: 1 },
-    {name : "campaignAudio", maxCount: 1}
+    { name: "campaignAudio", maxCount: 1 },
   ]),
   async (req, res) => {
     try {
@@ -316,8 +316,6 @@ const list = [
   "AI temporarily unavailable.",
 ];
 
-
-
 router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   let candidate; // <-- important for logging
   try {
@@ -392,10 +390,11 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
   }
 });
 
-
 router.post("/extract/video-summary/:rollNumber", async (req, res) => {
   try {
-    const candidate = await Candidate.findOne({ rollNumber: req.params.rollNumber });
+    const candidate = await Candidate.findOne({
+      rollNumber: req.params.rollNumber,
+    });
 
     if (!candidate || !candidate.campaignVideo) {
       return res.json({
@@ -411,41 +410,64 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
     }
 
     // const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
-const videoPath = path.resolve(
-  process.cwd(),
-  candidate.campaignVideo.replace(/^\//, "")
-);
+    const videoPath = path.resolve(
+      process.cwd(),
+      candidate.campaignVideo.replace(/^\//, ""),
+    );
 
-if (!fs.existsSync(videoPath)) {
-  throw new Error("Video file not found on server");
-}
+    if (!fs.existsSync(videoPath)) {
+      throw new Error("Video file not found on server");
+    }
 
-    
     const audioPath = await extractAudio(videoPath);
-
 
     const transcript = await transcribeAudio(audioPath);
 
-    const aiRes = await fetch("https://voteverse-backend-new.onrender.com/api/ai/summarize", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: transcript }),
-    });
+    const prompt = `
+You are an AI assistant.
+
+The following text is a transcription of a political campaign video.
+The transcription may be in Hindi or any other language.
+
+TASKS:
+1. Translate the content to English if needed
+2. Provide a clear, concise summary in English only
+3. List 3–5 key points in English
+4. Determine overall sentiment (Positive, Neutral, or Negative)
+
+IMPORTANT:
+- Output language must be ENGLISH ONLY
+- Do not include any non-English text
+
+Transcript:
+"""
+${transcript}
+"""
+`;
+
+    const aiRes = await fetch(
+  "https://voteverse-backend-new.onrender.com/api/ai/summarize",
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text: prompt }), // ✅ USE PROMPT
+  }
+);
 
     const aiData = await aiRes.json();
 
     const sentimentRes = await fetch(
-  "https://voteverse-backend-new.onrender.com/api/ai/sentiment",
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      text: transcript,
-    }),
-  }
-);
+      "https://voteverse-backend-new.onrender.com/api/ai/sentiment",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: transcript,
+        }),
+      },
+    );
 
-const sentimentData = await sentimentRes.json();
+    const sentimentData = await sentimentRes.json();
 
     candidate.campaignVideoTranscript = transcript;
     candidate.campaignVideoSummary = aiData.summary;
@@ -457,20 +479,17 @@ const sentimentData = await sentimentRes.json();
       summary: aiData.summary,
       sentiment: sentimentData.sentiment,
     });
-
   } catch (err) {
-  console.error("Video AI failed FULL:", err);
-  console.error("Message:", err.message);
-  console.error("Stack:", err.stack);
+    console.error("Video AI failed FULL:", err);
+    console.error("Message:", err.message);
+    console.error("Stack:", err.stack);
 
-  res.json({
-    status: "FAILED",
-    message: err.message || "Video could not be analyzed",
-  });
-}
-
+    res.json({
+      status: "FAILED",
+      message: err.message || "Video could not be analyzed",
+    });
+  }
 });
-
 
 router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
   try {
