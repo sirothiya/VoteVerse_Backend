@@ -10,22 +10,28 @@ async function transcribeAudio(audioPath) {
       method: "POST",
       headers: {
         Authorization: `Bearer ${process.env.HF_API_KEY}`,
-        "Content-Type": "audio/wav",
       },
       body: audioBuffer,
-    },
+    }
   );
 
   const rawText = await response.text();
 
-  console.log("HF RAW RESPONSE:", rawText.slice(0, 300));
+  // 👇 VERY IMPORTANT LOG
+  console.error("HF RAW RESPONSE:", rawText.slice(0, 300));
 
   let data;
   try {
     data = JSON.parse(rawText);
-  } catch (e) {
-    throw new Error("HF did not return JSON. Raw response logged above.");
+  } catch {
+    throw new Error("HF did not return JSON");
   }
+
+  if (data.error) {
+    throw new Error(data.error);
+  }
+
+  return data.text || "";
 }
 
 module.exports = transcribeAudio;

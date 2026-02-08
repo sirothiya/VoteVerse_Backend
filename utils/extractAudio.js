@@ -4,8 +4,16 @@ const path = require("path");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
+const fs = require("fs");
+
 const extractAudio = (videoPath) => {
   return new Promise((resolve, reject) => {
+    if (!fs.existsSync(videoPath)) {
+      return reject(
+        new Error(`Video file not found at path: ${videoPath}`)
+      );
+    }
+
     const audioPath = videoPath
       .replace("/videos/", "/audio/")
       .replace(path.extname(videoPath), ".wav");
@@ -21,5 +29,6 @@ const extractAudio = (videoPath) => {
       .run();
   });
 };
+
 
 module.exports = extractAudio;
