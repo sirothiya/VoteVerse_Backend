@@ -13,16 +13,19 @@ async function transcribeAudio(audioPath) {
         "Content-Type": "audio/wav",
       },
       body: audioBuffer,
-    }
+    },
   );
 
-  const data = await response.json();
+  const rawText = await response.text();
 
-  if (data.error) {
-    throw new Error(data.error);
+  console.log("HF RAW RESPONSE:", rawText.slice(0, 300));
+
+  let data;
+  try {
+    data = JSON.parse(rawText);
+  } catch (e) {
+    throw new Error("HF did not return JSON. Raw response logged above.");
   }
-
-  return data.text || "";
 }
 
 module.exports = transcribeAudio;
