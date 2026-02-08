@@ -410,7 +410,15 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
       });
     }
 
-    const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
+    // const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
+const videoPath = path.resolve(
+  process.cwd(),
+  candidate.campaignVideo.replace(/^\//, "")
+);
+
+if (!fs.existsSync(videoPath)) {
+  throw new Error("Video file not found on server");
+}
 
     
     const audioPath = await extractAudio(videoPath);

@@ -1,37 +1,24 @@
+const { AssemblyAI } = require("assemblyai");
 const fs = require("fs");
-const fetch = require("node-fetch");
+
+const client = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY,
+});
 
 async function transcribeAudio(audioPath) {
-  const audioBuffer = fs.readFileSync(audioPath);
-
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/openai/whisper-small",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.HF_API_KEY}`,
-      },
-      body: audioBuffer,
-    }
-  );
-
-  const rawText = await response.text();
-
-  // 👇 VERY IMPORTANT LOG
-  console.error("HF RAW RESPONSE:", rawText.slice(0, 300));
-
-  let data;
-  try {
-    data = JSON.parse(rawText);
-  } catch {
-    throw new Error("HF did not return JSON");
+  if (!fs.existsSync(audioPath)) {
+    throw new Error("Audio file not found");
   }
 
-  if (data.error) {
-    throw new Error(data.error);
+  const transcript = await client.transcripts.transcribe({
+    audio: audioPath,
+  });
+
+  if (transcript.status === "error") {
+    throw new Error(transcript.error);
   }
 
-  return data.text || "";
+  return transcript.text || "";
 }
 
 module.exports = transcribeAudio;
