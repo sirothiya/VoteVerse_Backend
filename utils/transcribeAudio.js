@@ -1,28 +1,28 @@
-const { spawn } = require("child_process");
+const fs = require("fs");
+const fetch = require("node-fetch");
 
-function transcribeAudio(audioPath) {
-  return new Promise((resolve, reject) => {
-    const py = spawn("python", ["transcribe.py", audioPath]);
+async function transcribeAudio(audioPath) {
+  const audioBuffer = fs.readFileSync(audioPath);
 
-    let transcript = "";
-    let errorOutput = "";
+  const response = await fetch(
+    "https://api-inference.huggingface.co/models/openai/whisper-small",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.HF_API_KEY}`,
+        "Content-Type": "audio/wav",
+      },
+      body: audioBuffer,
+    }
+  );
 
-    py.stdout.on("data", (data) => {
-      transcript += data.toString();
-    });
+  const data = await response.json();
 
-    py.stderr.on("data", (data) => {
-      errorOutput += data.toString();
-    });
+  if (data.error) {
+    throw new Error(data.error);
+  }
 
-    py.on("close", (code) => {
-      if (code !== 0) {
-        reject(errorOutput);
-      } else {
-        resolve(transcript.trim());
-      }
-    });
-  });
+  return data.text || "";
 }
 
 module.exports = transcribeAudio;

@@ -451,12 +451,16 @@ const sentimentData = await sentimentRes.json();
     });
 
   } catch (err) {
-    console.error("Video AI failed:", err.message);
-    res.json({
-      status: "FAILED",
-      message: "Video could not be analyzed",
-    });
-  }
+  console.error("Video AI failed FULL:", err);
+  console.error("Message:", err.message);
+  console.error("Stack:", err.stack);
+
+  res.json({
+    status: "FAILED",
+    message: err.message || "Video could not be analyzed",
+  });
+}
+
 });
 
 
