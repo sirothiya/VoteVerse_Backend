@@ -18,7 +18,7 @@ async function calculateElectionResult(electionId, session = null) {
   if (!candidates.length) {
     election.resultsCalculated = true;
     election.finalResults = {
-    totalVotes,
+    totalVotes: 0,
     headBoyResults: [],
     headGirlResults: [],
     overallResults:[]
