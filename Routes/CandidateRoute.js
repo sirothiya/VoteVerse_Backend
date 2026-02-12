@@ -478,7 +478,7 @@ ${transcript}
     res.json({
       status: "SUCCESS",
       summary: aiData.summary,
-      sentiment: sentimentData.sentiment,
+      sentiment: sentimentData.sentiment.split("**Sentiment:**")[1].trim(),
     });
   } catch (err) {
     console.error("Video AI failed FULL:", err);
