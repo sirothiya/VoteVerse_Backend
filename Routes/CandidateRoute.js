@@ -402,10 +402,11 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
         message: "No campaign video uploaded",
       });
     }
-    if (candidate.campaignVideoSummary) {
+    if (candidate.campaignVideoSummary && candidate.campaignVideoSummary.length > 0) {
       return res.json({
         status: "DONE",
         summary: candidate.campaignVideoSummary,
+        sentiment: candidate.campaignVideoSentiment,
       });
     }
 
