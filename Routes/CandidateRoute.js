@@ -426,40 +426,27 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
     const transcript = await transcribeAudio(audioPath);
 
     const prompt = `
-You are a strict video summarization engine.
+You are an AI assistant.
 
 The following text is a transcription of a political campaign video.
 The transcription may be in Hindi or any other language.
 
-YOUR JOB:
-- Translate to English internally if needed
-- Produce a VERY SHORT output
+TASKS:
+1. Translate the content to English if needed
+2. Provide a clear, concise summary in English only
+3. List 3–5 key points in English that capture the candidate's promises or main themes.
 
-OUTPUT RULES (MANDATORY):
-- English ONLY
-- Use the EXACT format below
-- Be extremely concise
-- Do NOT explain
-- Do NOT add extra text
+Rules:
 
-FORMAT:
-SUMMARY:
-<ONE sentence, maximum 25 words>
-
-KEY POINTS:
-- <maximum 5 words>
-- <maximum 5 words>
-- <maximum 5 words>
-
-SENTIMENT:
-<Positive | Neutral | Negative>
+IMPORTANT:
+- Output language must be ENGLISH ONLY
+- Do not include any non-English text
 
 Transcript:
 """
 ${transcript}
 """
 `;
-
 
     const aiRes = await fetch(
   "https://voteverse-backend-new.onrender.com/api/ai/summarize",
