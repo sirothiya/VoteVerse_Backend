@@ -434,7 +434,7 @@ The transcription may be in Hindi or any other language.
 TASKS:
 1. Translate the content to English if needed
 2. Provide a clear, concise summary in English only
-3. List 3–5 key points in English that capture the candidate's promises or main themes.
+3. List 3-5 key points in English that capture the candidate's promises or main themes.
 
 Rules:
 
@@ -480,7 +480,7 @@ ${transcript}
     res.json({
       status: "SUCCESS",
       summary: aiData.summary,
-      sentiment: sentimentData.sentiment.split("**Sentiment:**")[1].trim(),
+      sentiment: sentimentData.sentiment?.split("**Sentiment:**")[1].trim(),
     });
   } catch (err) {
     console.error("Video AI failed FULL:", err);
