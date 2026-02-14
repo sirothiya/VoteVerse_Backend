@@ -15,6 +15,7 @@ const getActiveElection = require("../utils/getActiveElection");
 const { get } = require("http");
 const extractAudio = require("../utils/extractAudio");
 const transcribeAudio = require("../utils/transcribeAudio");
+const extractManifestoText = require("../utils/extractManifestoText");
 
 // Ensure folders exist
 [
