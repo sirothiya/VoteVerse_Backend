@@ -102,9 +102,14 @@ router.post("/sentiment", async (req, res) => {
     );
 
     const data = await response.json();
+    const sentimentRaw = data?.choices?.[0]?.message?.content;
 
-    const sentiment =
-      data?.choices?.[0]?.message?.content?.trim() || "Neutral";
+
+const sentiment =
+  typeof sentimentRaw === "string"
+    ? sentimentRaw.trim()
+    : "Neutral";
+
 
     return res.json({ sentiment });
   } catch (err) {
