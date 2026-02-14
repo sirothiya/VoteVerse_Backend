@@ -28,7 +28,7 @@ router.post("/summarize", async (req, res) => {
             {
               role: "system",
               content:
-                "You are an AI that summarizes election manifestos. Respond ONLY with plain bullet points. Do NOT add introductions, explanations, titles, markdown, or formatting. Use simple '-' bullets only.",
+                "You are an AI that summarizes election manifestos. Respond ONLY with plain bullet points. Do NOT add introductions, explanations, titles, markdown, or formatting. Use simple '-' bullets only. You are a strict summarization engine. Compress the input text into a VERY SHORT summary.Rules:- Use ONLY bullet points. Maximum 5 bullet points. Each bullet must be under 12 wordsCapture only the core promises or themesDo NOT rewrite sectionsDo NOT add explanations, titles, or conclusionsIf text is repetitive, merge ideasOutput bullets only, nothing else",
             },
             {
               role: "user",
