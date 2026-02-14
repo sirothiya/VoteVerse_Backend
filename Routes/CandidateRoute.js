@@ -350,7 +350,7 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
 
     console.log("📦 PDF size:", response.data.byteLength);
 
-    const text = await extractPdfText(response.data);
+    const text = await extractManifestoText(candidate.manifesto.pdfPath, response.data);
     console.log("🧠 Extracted text length:", text.length);
 
     candidate.manifesto.extractedText = text;
