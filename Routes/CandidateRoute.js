@@ -149,6 +149,8 @@ router.post("/candidateLogin", async (req, res) => {
         position: candidate.position,
         electionStatus: candidate.election.status, // ⭐ KEY
         electionId: candidate.election._id,
+        electionStatus: candidate.election.status,
+        isElectionCompleted: candidate.election.status === "COMPLETED",
       },
     });
   } catch (err) {
@@ -351,7 +353,10 @@ router.post("/extract/manifesto/:rollNumber", async (req, res) => {
 
     console.log("📦 PDF size:", response.data.byteLength);
 
-    const text = await extractManifestoText(candidate.manifesto.pdfPath, response.data);
+    const text = await extractManifestoText(
+      candidate.manifesto.pdfPath,
+      response.data,
+    );
     console.log("🧠 Extracted text length:", text.length);
 
     candidate.manifesto.extractedText = text;
@@ -403,7 +408,10 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
         message: "No campaign video uploaded",
       });
     }
-    if (candidate.campaignVideoSummary && candidate.campaignVideoSummary.length > 0) {
+    if (
+      candidate.campaignVideoSummary &&
+      candidate.campaignVideoSummary.length > 0
+    ) {
       return res.json({
         status: "DONE",
         summary: candidate.campaignVideoSummary,
@@ -449,13 +457,13 @@ ${transcript}
 `;
 
     const aiRes = await fetch(
-  "https://voteverse-backend-new.onrender.com/api/ai/summarize",
-  {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text: prompt }), // ✅ USE PROMPT
-  }
-);
+      "https://voteverse-backend-new.onrender.com/api/ai/summarize",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: prompt }), // ✅ USE PROMPT
+      },
+    );
 
     const aiData = await aiRes.json();
 
@@ -559,5 +567,41 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
     });
   }
 });
+
+router.get("/results/candidate/:rollNumber", async (req, res) => {
+  try {
+    const { rollNumber } = req.params;
+
+    const election = await Election.findOne({
+      status: "COMPLETED",
+      resultsCalculated: true,
+      $or: [
+        { "finalResults.headBoyResults.rollNumber": rollNumber },
+        { "finalResults.headGirlResults.rollNumber": rollNumber },
+      ],
+    });
+
+    if (!election) {
+      return res.status(404).json({ message: "Candidate result not found" });
+    }
+
+    const allResults = [
+      ...election.finalResults.headBoyResults,
+      ...election.finalResults.headGirlResults,
+    ];
+
+    const candidateResult = allResults.find(
+      (c) => c.rollNumber === rollNumber
+    );
+
+    return res.json({
+      electionSession: election.electionSession,
+      candidate: candidateResult,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 
 module.exports = router;
