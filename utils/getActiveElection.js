@@ -6,9 +6,7 @@ module.exports = async function getActiveElection() {
     status: "ONGOING",
   });
 
-  // if (!election) {
-  //   throw new Error("No active election found");
-  // }
+  
 
   return election;
 };

@@ -160,67 +160,6 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
   }
 });
 
-// router.put("/electionsetup", jwtMiddleware, async (req, res) => {
-//   try {
-//     const adminId = req.adminId;
-//     const setupData = req.body;
-
-//     console.log("Received election setup data:", setupData);
-
-//     Object.keys(setupData).forEach((key) => {
-//       if (setupData[key] === "" || setupData[key] === undefined) {
-//         delete setupData[key];
-//       }
-//     });
-
-//     let endTime = null;
-//     if (setupData.electionStart && setupData.electionDurationHours) {
-//       const start = new Date(setupData.electionStart);
-//       endTime = new Date(
-//         start.getTime() + setupData.electionDurationHours * 3600000
-//       );
-//     }
-
-//     setupData.electionEnd = endTime;
-
-   
-//     const admin = await Admin.findByIdAndUpdate(
-//       adminId,
-//       { $set: { electionSetup: setupData } },
-//       { new: true }
-//     );
-
-//     if (!admin) return res.status(404).json({ message: "Admin not found" });
-
-    
-//     let election = await Election.findOne();
-//     if (!election) {
-//       election = new Election({
-//         isActive: false,
-//         startTime: setupData.electionStart || null,
-//         endTime: endTime,
-//       });
-//     } else {
-//       election.startTime = setupData.electionStart || null;
-//       election.endTime = endTime;
-//       election.status = "ONGOING";
-//     }
-
-//     await election.save();
-
-//     console.log("Saved Election End:", admin.electionSetup.electionEnd);
-
-//     return res.status(200).json({
-//       message: "Election setup updated",
-//       electionSetup: admin.electionSetup,
-//     });
-//   } catch (err) {
-//     console.log("Error in election setup:", err);
-//     return res.status(500).json({ error: "Internal server error" });
-//   }
-// });
-
-
 
 router.put("/electionsetup", jwtMiddleware, async (req, res) => {
   try {

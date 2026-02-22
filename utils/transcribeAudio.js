@@ -4,7 +4,6 @@ const fs = require("fs");
 async function transcribeAudio(audioPath) {
   const apiKey = process.env.ASSEMBLYAI_API_KEY;
 
-  // 1️⃣ Upload audio
   const uploadRes = await axios.post(
     "https://api.assemblyai.com/v2/upload",
     fs.createReadStream(audioPath),
@@ -18,12 +17,11 @@ async function transcribeAudio(audioPath) {
 
   const audioUrl = uploadRes.data.upload_url;
 
-  // 2️⃣ Start transcription (🔥 FIX IS HERE)
   const transcriptRes = await axios.post(
     "https://api.assemblyai.com/v2/transcript",
     {
       audio_url: audioUrl,
-      speech_models: ["universal-2"], // ✅ REQUIRED
+      speech_models: ["universal-2"], 
     },
     {
       headers: {
@@ -35,7 +33,6 @@ async function transcribeAudio(audioPath) {
 
   const transcriptId = transcriptRes.data.id;
 
-  // 3️⃣ Poll result
   while (true) {
     const pollingRes = await axios.get(
       `https://api.assemblyai.com/v2/transcript/${transcriptId}`,

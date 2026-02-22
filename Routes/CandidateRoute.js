@@ -255,9 +255,6 @@ router.post(
       if (req.files?.partysymbol)
         candidate.partysymbol = `/uploads/others/${req.files.partysymbol[0].filename}`;
 
-      // if (req.files?.manifesto)
-      //   candidate.manifesto = `/uploads/manifestos/${req.files.manifesto[0].filename}`;
-
       if (req.files?.manifesto) {
         const manifestoFile = req.files.manifesto[0];
 
@@ -419,7 +416,6 @@ router.post("/extract/video-summary/:rollNumber", async (req, res) => {
       });
     }
 
-    // const videoPath = path.join(__dirname, "..", candidate.campaignVideo);
     const videoPath = path.resolve(
       process.cwd(),
       candidate.campaignVideo.replace(/^\//, ""),

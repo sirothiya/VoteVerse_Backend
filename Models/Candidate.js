@@ -96,17 +96,11 @@ campaignVideoSentiment: String,
   },
 });
 
-/**
- * 🔒 One candidate per position per election per roll number
- */
 candidateSchema.index(
   { election: 1, rollNumber: 1 },
   { unique: true }
 );
 
-/**
- * 🔐 Hash password before saving
- */
 candidateSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 

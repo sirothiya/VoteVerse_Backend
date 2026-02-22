@@ -127,9 +127,9 @@ router.put("/:rollNumber", jwtMiddleware, async (req, res) => {
 
 router.put("/profile/password", jwtMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id; //extracting the id from the token
+    const userId = req.user.id; 
     console.log(userId, "<---  user id ");
-    const { oldpassword, newpassword } = req.body; // extracting current and new password from request body
+    const { oldpassword, newpassword } = req.body; 
     const user = await User.findById(userId);
     if (!(await user.comparePassword(oldpassword)))
       return res.status(400).json({ error: "Old password is incorrect" });

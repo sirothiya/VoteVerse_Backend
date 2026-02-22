@@ -58,13 +58,6 @@ router.post("/summarize", async (req, res) => {
 });
 
 
-/**
- * 🎭 SENTIMENT ANALYSIS
- * Input: text
- * Output: Positive | Neutral | Negative
- */
-
-
 router.post("/sentiment", async (req, res) => {
   try {
     const { text } = req.body;

@@ -23,7 +23,7 @@ cron.schedule("* * * * *", async () => {
       return;
     }
 
-    // 1️⃣ Mark election completed
+ 
     election.status = "COMPLETED";
     election.isActive = false;
     election.endedAt = now;
@@ -31,10 +31,9 @@ cron.schedule("* * * * *", async () => {
 
     await election.save({ session });
 
-    // 2️⃣ IMMEDIATELY calculate results 🔥
     await calculateElectionResult(election._id, session);
 
-    // 3️⃣ Reset admin election setup
+
     await Admin.updateOne(
       {},
       {
