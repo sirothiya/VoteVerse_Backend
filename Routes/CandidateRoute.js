@@ -171,7 +171,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:rollNumber", jwtMiddleware, async (req, res) => {
+router.get("/:rollNumber", async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
     
