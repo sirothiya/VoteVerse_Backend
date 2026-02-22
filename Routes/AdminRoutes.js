@@ -273,7 +273,7 @@ router.put("/updateStatus/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.post("/announcement", async (req, res) => {
+router.post("/announcement",jwtMiddleware, async (req, res) => {
   try {
     const { announcement } = req.body;
 
