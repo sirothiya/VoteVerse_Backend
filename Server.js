@@ -1,5 +1,4 @@
 const express = require("express");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const app = express();
 require("dotenv").config();
 const bodyParser = require("body-parser");
@@ -7,13 +6,39 @@ const cors = require("cors");
 const path = require('path');
 // Allow specific frontend (during development)
 // app.options("/*", cors());
-app.use(
-  cors({
-    origin: "http://localhost:5173", // your frontend URL
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: "http://localhost:5173", // your frontend URL
+//     methods: ["GET", "POST", "PUT", "DELETE"],
+//     credentials: true,
+//   })
+// );
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://vote-verse-frontend.vercel.app",
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use(express.json({ limit: "5mb" }));
+app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
 app.use(bodyParser.json());
 const PORT = process.env.PORT || 3000;
