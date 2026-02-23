@@ -36,6 +36,7 @@ router.post("/userSignup", async (req, res) => {
     const payload = {
       id: newUser._id,
       rollNumber: newUser.rollNumber,
+      role: "user"
     };
 
     const token = generateToken(payload);

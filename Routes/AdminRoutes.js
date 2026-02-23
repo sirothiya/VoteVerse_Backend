@@ -88,6 +88,7 @@ router.post("/adminLogin", async (req, res) => {
     const payload = {
       id: admin._id,
       email: admin.email,
+      role :"admin"
     };
 
     const token = generateToken(payload);

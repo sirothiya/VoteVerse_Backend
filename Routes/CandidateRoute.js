@@ -16,6 +16,7 @@ const { get } = require("http");
 const extractAudio = require("../utils/extractAudio");
 const transcribeAudio = require("../utils/transcribeAudio");
 const extractManifestoText = require("../utils/extractManifestoText");
+const allowRoles = require("../utils/allowRoles");
 
 // Ensure folders exist
 [
@@ -99,6 +100,7 @@ router.post("/candidateSignup", async (req, res) => {
     const payload = {
       id: savedCandidate._id,
       rollNumber: savedCandidate.rollNumber,
+      role : "candidate",
     };
 
     const token = generateToken(payload);
@@ -171,52 +173,98 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.get("/:rollNumber", async (req, res) => {
+router.get("/results/candidate/:rollNumber", async (req, res) => {
   try {
-    const rollNumber = req.params.rollNumber;
-    
-    const candidate = await Candidate.findOne({ rollNumber }).populate(
-      "election",
+    const { rollNumber } = req.params;
+
+    const election = await Election.findOne({
+      status: "COMPLETED",
+      resultsCalculated: true,
+      $or: [
+        { "finalResults.headBoyResults.rollNumber": rollNumber },
+        { "finalResults.headGirlResults.rollNumber": rollNumber },
+      ],
+    });
+
+    if (!election) {
+      return res.status(404).json({ message: "Candidate result not found" });
+    }
+
+    const allResults = [
+      ...election.finalResults.headBoyResults,
+      ...election.finalResults.headGirlResults,
+    ];
+
+    const candidateResult = allResults.find(
+      (c) => c.rollNumber === rollNumber
     );
 
-    if (!candidate) {
-      return res.status(404).json({ message: "Candidate not found" });
-    }
-    return res.status(200).json({ candidate });
+    return res.json({
+      electionSession: election.electionSession,
+      candidate: candidateResult,
+    });
   } catch (err) {
-    console.error("Error checking profile:", err);
-    return res
-      .status(500)
-      .json({ message: "Error checking profile", error: err.message });
+    res.status(500).json({ message: "Server error" });
   }
 });
 
+
 router.get(
-  "/checkprofilestatus/:rollNumber",
+  "/:rollNumber",
   jwtMiddleware,
+  allowRoles("admin", "user"),
   async (req, res) => {
     try {
-      const rollNumber = req.params.rollNumber;
-      const candidate = await Candidate.findOne({ rollNumber });
+      const { rollNumber } = req.params;
 
-      // 'let' since we might reassign
+      const candidate = await Candidate.findOne({ rollNumber }).populate(
+        "election"
+      );
 
       if (!candidate) {
         return res.status(404).json({ message: "Candidate not found" });
       }
+
+      return res.status(200).json({ candidate });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
+router.get(
+  "/checkprofilestatus/:rollNumber",
+  jwtMiddleware,
+  allowRoles("admin", "user", "candidate"),
+  async (req, res) => {
+    try {
+      const { rollNumber } = req.params;
+      const candidate = await Candidate.findOne({ rollNumber });
+
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      // Candidate can only check own status
+      if (
+        req.userRole === "candidate" &&
+        req.user.rollNumber !== rollNumber
+      ) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
       return res.status(200).json({ status: candidate.status });
     } catch (err) {
       console.error("Error checking profile:", err);
-      res
-        .status(500)
-        .json({ message: "Error checking profile", error: err.message });
+      return res.status(500).json({ message: "Server error" });
     }
-  },
+  }
 );
 
 router.post(
   "/complete-profile/:rollNumber",
-  jwtMiddleware,
+  jwtMiddleware, allowRoles("candidate"),
   upload.fields([
     { name: "manifesto", maxCount: 1 },
     { name: "campaignVideo", maxCount: 1 },
@@ -317,7 +365,7 @@ const list = [
   "AI temporarily unavailable.",
 ];
 
-router.post("/extract/manifesto/:rollNumber",jwtMiddleware, async (req, res) => {
+router.post("/extract/manifesto/:rollNumber",jwtMiddleware, allowRoles("admin","user", "candidate"),async (req, res) => {
   let candidate; // <-- important for logging
   try {
     const rollNumber = req.params.rollNumber;
@@ -394,7 +442,7 @@ router.post("/extract/manifesto/:rollNumber",jwtMiddleware, async (req, res) => 
   }
 });
 
-router.post("/extract/video-summary/:rollNumber", jwtMiddleware,async (req, res) => {
+router.post("/extract/video-summary/:rollNumber", jwtMiddleware,  allowRoles("admin","user", "candidate"),async (req, res) => {
   try {
     const candidate = await Candidate.findOne({
       rollNumber: req.params.rollNumber,
@@ -499,7 +547,7 @@ ${transcript}
   }
 });
 
-router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
+router.delete("/delete/:rollNumber", jwtMiddleware,  allowRoles("admin", "candidate"),async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
 
@@ -565,40 +613,6 @@ router.delete("/delete/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.get("/results/candidate/:rollNumber", async (req, res) => {
-  try {
-    const { rollNumber } = req.params;
-
-    const election = await Election.findOne({
-      status: "COMPLETED",
-      resultsCalculated: true,
-      $or: [
-        { "finalResults.headBoyResults.rollNumber": rollNumber },
-        { "finalResults.headGirlResults.rollNumber": rollNumber },
-      ],
-    });
-
-    if (!election) {
-      return res.status(404).json({ message: "Candidate result not found" });
-    }
-
-    const allResults = [
-      ...election.finalResults.headBoyResults,
-      ...election.finalResults.headGirlResults,
-    ];
-
-    const candidateResult = allResults.find(
-      (c) => c.rollNumber === rollNumber
-    );
-
-    return res.json({
-      electionSession: election.electionSession,
-      candidate: candidateResult,
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Server error" });
-  }
-});
 
 
 module.exports = router;
