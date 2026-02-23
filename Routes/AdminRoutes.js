@@ -10,6 +10,7 @@ const Election = require("../Models/Election");
 const calculateFinalResults = require("../utils/calculateElectionResult");
 const { generateToken, jwtMiddleware } = require("../jwt");
 const getActiveElection = require("../utils/getActiveElection");
+const allowRoles = require("../utils/allowRoles");
 
 const checkAdmin = async (userId) => {
   try {
@@ -110,7 +111,7 @@ router.post("/adminLogin", async (req, res) => {
 
 
 
-router.post("/election/reset", jwtMiddleware, async (req, res) => {
+router.post("/election/reset", jwtMiddleware, allowRoles("admin"), async (req, res) => {
   try {
     // 1️⃣ Fetch admin
     const admin = await Admin.findOne();
@@ -162,7 +163,7 @@ router.post("/election/reset", jwtMiddleware, async (req, res) => {
 });
 
 
-router.put("/electionsetup", jwtMiddleware, async (req, res) => {
+router.put("/electionsetup", jwtMiddleware, allowRoles("admin"), async (req, res) => {
   try {
     const adminId = req.adminId;
     const setupData = req.body;
@@ -274,7 +275,7 @@ router.put("/updateStatus/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.post("/announcement",jwtMiddleware, async (req, res) => {
+router.post("/announcement",jwtMiddleware,allowRoles("admin"), async (req, res) => {
   try {
     const { announcement } = req.body;
 
@@ -299,7 +300,7 @@ router.post("/announcement",jwtMiddleware, async (req, res) => {
 });
 
 
-router.delete("/delete/all", jwtMiddleware, async (req, res) => {
+router.delete("/delete/all", jwtMiddleware,allowRoles("admin"), async (req, res) => {
   try {
     const election = await Election.findOne({ isActive: true });
     const electionId = election._id;

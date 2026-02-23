@@ -4,6 +4,7 @@ const router = express.Router();
 const User = require("../Models/User");
 const Candidate = require("../Models/Candidate");
 const { generateToken, jwtMiddleware } = require("../jwt");
+const allowRoles = require("../utils/allowRoles");
 
 router.post("/userSignup", async (req, res) => {
   try {
@@ -89,7 +90,7 @@ router.post("/userLogin", async (req, res) => {
   }
 });
 
-router.get("/profile/:rollNumber", jwtMiddleware, async (req, res) => {
+router.get("/profile/:rollNumber", jwtMiddleware,allowRoles("admin", "user"),  async (req, res) => {
   try {
     const rollNumber = req.params.rollNumber;
     const user = await User.findOne({ rollNumber });
@@ -104,7 +105,7 @@ router.get("/profile/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 // I am updating user restricted to only update all except aadhar,isVoted,role
-router.put("/:rollNumber", jwtMiddleware, async (req, res) => {
+router.put("/:rollNumber", jwtMiddleware, allowRoles("admin", "user"), async (req, res) => {
   const restrictedFields = ["rollNumber", "isVoted", "role"];
   try {
     const rollNumber = req.params.rollNumber;
@@ -126,7 +127,7 @@ router.put("/:rollNumber", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.put("/profile/password", jwtMiddleware, async (req, res) => {
+router.put("/profile/password", jwtMiddleware, allowRoles("user"), async (req, res) => {
   try {
     const userId = req.user.id; 
     console.log(userId, "<---  user id ");
@@ -143,7 +144,7 @@ router.put("/profile/password", jwtMiddleware, async (req, res) => {
   }
 });
 
-router.delete("/deleteOne", jwtMiddleware, async (req, res) => {
+router.delete("/deleteOne", jwtMiddleware, allowRoles("admin", "user"), async (req, res) => {
   try {
     const id = req.user.id;
     const user = await User.findByIdAndDelete(id);
