@@ -242,7 +242,7 @@ router.get(
 router.get(
   "/:rollNumber",
   jwtMiddleware,
-  allowRoles("admin", "user"),
+  allowRoles("admin", "user","candidate"),
   async (req, res) => {
     try {
       const { rollNumber } = req.params;
