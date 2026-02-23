@@ -165,7 +165,7 @@ router.post("/election/reset", jwtMiddleware, allowRoles("admin"), async (req, r
 
 router.put("/electionsetup", jwtMiddleware, allowRoles("admin"), async (req, res) => {
   try {
-    const adminId = req.adminId;
+    const adminId = req.user.id;
     const setupData = req.body;
 
     // 1️⃣ Clean empty fields
