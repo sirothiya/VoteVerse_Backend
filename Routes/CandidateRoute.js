@@ -138,6 +138,7 @@ router.post("/candidateLogin", async (req, res) => {
     const token = generateToken({
       id: candidate._id,
       rollNumber: candidate.rollNumber,
+      role: "candidate",
     });
 
     return res.status(200).json({

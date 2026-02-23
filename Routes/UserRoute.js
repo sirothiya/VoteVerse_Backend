@@ -53,9 +53,7 @@ router.post("/userSignup", async (req, res) => {
 router.post("/userLogin", async (req, res) => {
   try {
     const { rollNumber, password } = req.body;
-    console.log("1");
     const user = await User.findOne({ rollNumber });
-    console.log("11");
     if (!user) {
       return res.status(401).json({ error: "User not found, please signup" });
     }
@@ -67,10 +65,10 @@ router.post("/userLogin", async (req, res) => {
     const payload = {
       id: user.id,
       rollNumber: user.rollNumber,
+      role: "user"
     };
-    console.log("1111");
+
     const token = generateToken(payload);
-    console.log("11111");
     return res.status(200).json({
       message:"User login successful",
       User: {
