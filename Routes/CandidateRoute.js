@@ -182,9 +182,6 @@ router.get("/:rollNumber", async (req, res) => {
     if (!candidate) {
       return res.status(404).json({ message: "Candidate not found" });
     }
-    if (req.user.id !== candidate._id.toString()) {
-  return res.status(403).json({ message: "Access denied" });
-}
     return res.status(200).json({ candidate });
   } catch (err) {
     console.error("Error checking profile:", err);
