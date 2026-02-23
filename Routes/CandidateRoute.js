@@ -209,31 +209,6 @@ router.get("/results/candidate/:rollNumber", async (req, res) => {
   }
 });
 
-
-router.get(
-  "/:rollNumber",
-  jwtMiddleware,
-  allowRoles("admin", "user"),
-  async (req, res) => {
-    try {
-      const { rollNumber } = req.params;
-
-      const candidate = await Candidate.findOne({ rollNumber }).populate(
-        "election"
-      );
-
-      if (!candidate) {
-        return res.status(404).json({ message: "Candidate not found" });
-      }
-
-      return res.status(200).json({ candidate });
-    } catch (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Server error" });
-    }
-  }
-);
-
 router.get(
   "/checkprofilestatus/:rollNumber",
   jwtMiddleware,
@@ -262,6 +237,32 @@ router.get(
     }
   }
 );
+
+
+router.get(
+  "/:rollNumber",
+  jwtMiddleware,
+  allowRoles("admin", "user"),
+  async (req, res) => {
+    try {
+      const { rollNumber } = req.params;
+
+      const candidate = await Candidate.findOne({ rollNumber }).populate(
+        "election"
+      );
+
+      if (!candidate) {
+        return res.status(404).json({ message: "Candidate not found" });
+      }
+
+      return res.status(200).json({ candidate });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Server error" });
+    }
+  }
+);
+
 
 router.post(
   "/complete-profile/:rollNumber",
