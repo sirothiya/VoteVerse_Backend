@@ -418,7 +418,8 @@ router.post("/extract/manifesto/:rollNumber",jwtMiddleware, allowRoles("admin","
 
     const aiData = await aiRes.json();
 
-    if (!list.includes(aiData.summary)) {
+    // Check if summary was successfully generated and not an error message
+    if (aiData.summary && !aiData.summary.includes("AI temporarily unavailable")) {
       candidate.manifesto.summary = aiData.summary;
       console.log("📝 Manifesto summary length:", aiData.summary.length);
       await candidate.save();
@@ -427,7 +428,7 @@ router.post("/extract/manifesto/:rollNumber",jwtMiddleware, allowRoles("admin","
     return res.json({
       message: "Manifesto extracted successfully",
       extractedText: text,
-      summary: aiData.summary,
+      summary: aiData.summary || "AI temporarily unavailable.",
     });
   } catch (err) {
     console.error("❌ EXTRACTION FAILED");
@@ -526,14 +527,14 @@ ${transcript}
     const sentimentData = await sentimentRes.json();
 
     candidate.campaignVideoTranscript = transcript;
-    candidate.campaignVideoSummary = aiData.summary;
-    candidate.campaignVideoSentiment = sentimentData.sentiment;
+    candidate.campaignVideoSummary = aiData.summary || "Summary unavailable";
+    candidate.campaignVideoSentiment = sentimentData.sentiment || "Neutral";
     await candidate.save();
 
     res.json({
       status: "SUCCESS",
-      summary: aiData.summary,
-      sentiment: sentimentData.sentiment?.split("**Sentiment:**")[1].trim(),
+      summary: aiData.summary || "Summary unavailable",
+      sentiment: sentimentData.sentiment ? sentimentData.sentiment.trim() : "Neutral",
     });
   } catch (err) {
     console.error("Video AI failed FULL:", err);
