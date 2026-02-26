@@ -18,26 +18,60 @@ async function calculateElectionResult(electionId, session = null) {
   if (!candidates.length) {
     election.resultsCalculated = true;
     election.finalResults = {
-    totalVotes: 0,
-    headBoyResults: [],
-    headGirlResults: [],
-    overallResults:[]
-  };
+      totalVotes: 0,
+      headBoyResults: [],
+      headGirlResults: [],
+      overallResults: [],
+    };
     await election.save({ session });
     return election;
   }
 
+  // 🔥 ENHANCED SNAPSHOT: Store all visible candidate data
   const snapshot = (c, rank) => ({
+    // Basic Info
     candidateId: c._id,
     name: c.name,
     rollNumber: c.rollNumber,
     class: c.class,
     gender: c.gender,
     position: c.position,
+    status: c.status,
+
+    // Media & Photos
     profilePhoto: c.profilePhoto,
     partySymbol: c.partysymbol,
+    campaignVideo: c.campaignVideo,
+    campaignAudio: c.campaignAudio,
+
+    // Election Results
     votes: c.voteCount,
     rank,
+
+    // Campaign Materials
+    manifesto: {
+      pdfPath: c.manifesto?.pdfPath,
+      originalPdfName: c.manifesto?.originalPdfName,
+      extractedText: c.manifesto?.extractedText,
+      summary: c.manifesto?.summary,
+    },
+
+    // Video Analysis
+    campaignVideoTranscript: c.campaignVideoTranscript,
+    campaignVideoSummary: c.campaignVideoSummary,
+    campaignVideoSentiment: c.campaignVideoSentiment,
+
+    // Profile Achievements
+    achievements: c.achievements || [],
+    initiatives: c.initiatives || [],
+    profileCompleted: c.profilecompleted,
+
+    // Verification Status
+    parentalConsent: c.parentalConsent,
+    declarationSigned: c.declarationSigned,
+
+    // Metadata
+    createdAt: c.createdAt,
   });
 
   const headBoys = candidates
@@ -55,6 +89,7 @@ async function calculateElectionResult(electionId, session = null) {
     .map((c, i) => ({
       candidateId: c._id,
       name: c.name,
+      rollNumber: c.rollNumber,
       position: c.position,
       votes: c.voteCount,
       rank: i + 1,
