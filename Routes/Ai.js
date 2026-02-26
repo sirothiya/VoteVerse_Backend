@@ -7,7 +7,11 @@ router.post("/summarize", async (req, res) => {
     const { text } = req.body;
 
     if (!text || text.length < 50) {
-      return res.json({ summary: "Text too short to summarize." });
+      return res.json({ 
+        success: false,
+        summary: null,
+        error: "Text too short to summarize"
+      });
     }
 
     const response = await fetch(
@@ -42,17 +46,35 @@ router.post("/summarize", async (req, res) => {
 
     const data = await response.json();
 
-    if (!data?.choices?.length) {
-      return res.json({ summary: "AI temporarily unavailable." });
+    if (!data?.choices?.length || !data.choices[0]?.message?.content) {
+      return res.json({ 
+        success: false,
+        summary: null,
+        error: "AI failed to generate summary"
+      });
+    }
+
+    const summary = data.choices[0].message.content.trim();
+    
+    // Validate that we got actual content and not an error message
+    if (!summary || summary.length < 10) {
+      return res.json({ 
+        success: false,
+        summary: null,
+        error: "Invalid summary received from AI"
+      });
     }
 
     return res.json({
-      summary: data.choices[0].message.content,
+      success: true,
+      summary: summary,
     });
   } catch (error) {
     console.error("OpenRouter Summary Error:", error.message);
     return res.json({
-      summary: "AI temporarily unavailable.",
+      success: false,
+      summary: null,
+      error: error.message || "AI service temporarily unavailable"
     });
   }
 });
@@ -63,7 +85,11 @@ router.post("/sentiment", async (req, res) => {
     const { text } = req.body;
 
     if (!text || text.trim().length < 10) {
-      return res.json({ sentiment: "Neutral" });
+      return res.json({ 
+        success: false,
+        sentiment: null,
+        error: "Text too short to analyze"
+      });
     }
 
     const response = await fetch(
@@ -97,18 +123,39 @@ router.post("/sentiment", async (req, res) => {
     const data = await response.json();
     const sentimentRaw = data?.choices?.[0]?.message?.content;
 
+    if (!sentimentRaw) {
+      return res.json({ 
+        success: false,
+        sentiment: null,
+        error: "AI failed to analyze sentiment"
+      });
+    }
 
-const sentiment =
-  typeof sentimentRaw === "string"
-    ? sentimentRaw.trim()
-    : "Neutral";
+    const sentiment = sentimentRaw.trim();
+    
+    // Validate that sentiment is one of the expected values
+    const validSentiments = ["Positive", "Neutral", "Negative"];
+    if (!validSentiments.includes(sentiment)) {
+      console.warn(`Unexpected sentiment value: ${sentiment}, defaulting to Neutral`);
+      return res.json({ 
+        success: true,
+        sentiment: "Neutral"
+      });
+    }
 
-
-    return res.json({ sentiment });
+    return res.json({ 
+      success: true,
+      sentiment 
+    });
   } catch (err) {
     console.error("Sentiment AI failed:", err.message);
-    return res.json({ sentiment: "Neutral" });
+    return res.json({ 
+      success: false,
+      sentiment: null,
+      error: err.message || "Sentiment analysis failed"
+    });
   }
 });
 
 module.exports = router;
+

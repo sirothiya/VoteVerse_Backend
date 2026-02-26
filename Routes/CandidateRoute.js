@@ -177,6 +177,8 @@ router.get("/", async (req, res) => {
 router.get("/results/candidate/:rollNumber", async (req, res) => {
   try {
     const { rollNumber } = req.params;
+    
+    console.log("🔍 Searching for candidate in results:", rollNumber);
 
     const election = await Election.findOne({
       status: "COMPLETED",
@@ -184,28 +186,49 @@ router.get("/results/candidate/:rollNumber", async (req, res) => {
       $or: [
         { "finalResults.headBoyResults.rollNumber": rollNumber },
         { "finalResults.headGirlResults.rollNumber": rollNumber },
+        { "finalResults.overallResults.rollNumber": rollNumber }, // 🔥 Include overall results
       ],
     });
 
     if (!election) {
-      return res.status(404).json({ message: "Candidate result not found" });
+      console.log("❌ No completed election found for candidate:", rollNumber);
+      return res.status(404).json({ 
+        message: "Candidate result not found",
+        error: "No completed election data available for this candidate"
+      });
     }
 
+    // Search in all results arrays
     const allResults = [
       ...election.finalResults.headBoyResults,
       ...election.finalResults.headGirlResults,
     ];
 
+    // Convert rollNumber to string for consistent comparison
+    const rollNumberStr = String(rollNumber);
     const candidateResult = allResults.find(
-      (c) => c.rollNumber === rollNumber
+      (c) => String(c.rollNumber) === rollNumberStr
     );
 
+    if (!candidateResult) {
+      console.log("❌ Candidate not found in results for roll number:", rollNumber);
+      return res.status(404).json({ 
+        message: "Candidate not found in election results",
+        error: "This candidate may not be an approved candidate"
+      });
+    }
+
+    console.log("✅ Found candidate in results:", candidateResult);
     return res.json({
       electionSession: election.electionSession,
       candidate: candidateResult,
     });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("❌ Error fetching candidate results:", err);
+    res.status(500).json({ 
+      message: "Server error",
+      error: err.message 
+    });
   }
 });
 
@@ -418,17 +441,21 @@ router.post("/extract/manifesto/:rollNumber",jwtMiddleware, allowRoles("admin","
 
     const aiData = await aiRes.json();
 
-    // Check if summary was successfully generated and not an error message
-    if (aiData.summary && !aiData.summary.includes("AI temporarily unavailable")) {
+    // Only save summary if AI successfully generated a valid summary
+    if (aiData.success && aiData.summary) {
       candidate.manifesto.summary = aiData.summary;
       console.log("📝 Manifesto summary length:", aiData.summary.length);
       await candidate.save();
+    } else {
+      console.warn("⚠️ AI failed to generate manifesto summary:", aiData.error);
     }
 
     return res.json({
       message: "Manifesto extracted successfully",
       extractedText: text,
-      summary: aiData.summary || "AI temporarily unavailable.",
+      summary: aiData.success ? aiData.summary : null,
+      aiStatus: aiData.success ? "success" : "failed",
+      error: !aiData.success ? aiData.error : null,
     });
   } catch (err) {
     console.error("❌ EXTRACTION FAILED");
@@ -438,7 +465,10 @@ router.post("/extract/manifesto/:rollNumber",jwtMiddleware, allowRoles("admin","
 
     return res.status(500).json({
       message: "Extraction failed",
-      error: err.message, // TEMP
+      error: err.message,
+      extractedText: null,
+      summary: null,
+      aiStatus: "failed",
     });
   }
 });
@@ -526,15 +556,25 @@ ${transcript}
 
     const sentimentData = await sentimentRes.json();
 
+    // Only save if AI successfully generated valid responses
     candidate.campaignVideoTranscript = transcript;
-    candidate.campaignVideoSummary = aiData.summary || "Summary unavailable";
-    candidate.campaignVideoSentiment = sentimentData.sentiment || "Neutral";
+    
+    if (aiData.success && aiData.summary) {
+      candidate.campaignVideoSummary = aiData.summary;
+    }
+    
+    if (sentimentData.success && sentimentData.sentiment) {
+      candidate.campaignVideoSentiment = sentimentData.sentiment;
+    }
+    
     await candidate.save();
 
     res.json({
-      status: "SUCCESS",
-      summary: aiData.summary || "Summary unavailable",
-      sentiment: sentimentData.sentiment ? sentimentData.sentiment.trim() : "Neutral",
+      status: aiData.success && sentimentData.success ? "SUCCESS" : "PARTIAL_SUCCESS",
+      summary: aiData.success ? aiData.summary : null,
+      summaryError: !aiData.success ? aiData.error : null,
+      sentiment: sentimentData.success ? sentimentData.sentiment : null,
+      sentimentError: !sentimentData.success ? sentimentData.error : null,
     });
   } catch (err) {
     console.error("Video AI failed FULL:", err);
@@ -543,7 +583,9 @@ ${transcript}
 
     res.json({
       status: "FAILED",
-      message: err.message || "Video could not be analyzed",
+      summary: null,
+      sentiment: null,
+      error: err.message || "Video could not be analyzed",
     });
   }
 });
